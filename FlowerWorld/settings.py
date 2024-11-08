@@ -18,6 +18,9 @@ import environ
 env = environ.Env()
 environ.Env.read_env()
 
+import os
+PORT = os.environ.get("PORT", 8000)
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
@@ -66,10 +69,10 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:5500",
-    "https://flower-world-frontend-new.vercel.app"
-]
+# CORS_ALLOWED_ORIGINS = [
+#     "http://127.0.0.1:5500",
+#     "https://flower-world-frontend-new.vercel.app"
+# ]
 # CSRF_TRUSTED_ORIGINS = ['https://flowerworld.onrender.com','https://flower-world-frontend-new.vercel.app','https://*.127.0.0.1',]
 
 ROOT_URLCONF = 'FlowerWorld.urls'
