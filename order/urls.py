@@ -17,7 +17,7 @@ router = DefaultRouter()
 router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'carts', CartViewSet, basename='cart')
 
-cart_router = routers.NestedDefaultRouter(router,"carts",lookup="cart")
+cart_router = routers.NestedDefaultRouter(router,r'carts',lookup="cart")
 cart_router.register(r'items', CartItemViewSet, basename='cartItems')
 
 urlpatterns = [

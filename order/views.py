@@ -9,8 +9,79 @@ from .serializers import OrderSerializer, CartSerializer, CartItemSerializer, Ad
 from flowers.models import Flower
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-from rest_framework.mixins import CreateModelMixin,RetrieveModelMixin, DestroyModelMixin
+from rest_framework.mixins import ListModelMixin,CreateModelMixin,RetrieveModelMixin, DestroyModelMixin
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
+
+class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
+    queryset = Cart.objects.all()
+    serializer_class = CartSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'delete']
+
+    # def get_queryset(self):
+    #     # Ensure the cart is filtered for the authenticated user
+    #     return Cart.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        # Create the cart and trigger the grand total calculation
+        cart = serializer.save()
+        cart.calculate_grand_total()
+
+    def perform_update(self, serializer):
+        # Recalculate grand total after updating the cart
+        cart = serializer.save()
+        cart.calculate_grand_total()
+
+    def perform_destroy(self, instance):
+        # Recalculate grand total after deleting the cart
+        super().perform_destroy(instance)
+        instance.calculate_grand_total()
+
+    def list(self, request, *args, **kwargs):
+        # Ensure that grand total is calculated for each cart item when listing
+        carts = self.get_queryset()
+        for cart in carts:
+            cart.calculate_grand_total()  # Ensure the grand total is recalculated
+        return super().list(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        # Recalculate grand total when retrieving a single cart
+        cart = self.get_object()
+        cart.calculate_grand_total()  # Ensure grand total is up-to-date
+        return super().retrieve(request, *args, **kwargs)
+    # def get_queryset(self):
+    #     # Optionally, filter carts by the authenticated user if needed:
+    #     return Cart.objects.filter(user=self.request.user)
+    
+    # def list(self, request, *args, **kwargs):
+    #     # Get the queryset filtered by the authenticated user
+    #     queryset = self.get_queryset()
+        
+    #     # Serialize the data
+    #     serializer = self.get_serializer(queryset, many=True)
+        
+    #     # Return a Response with serialized data
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
+
+class CartItemViewSet(viewsets.ModelViewSet):
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+    def get_queryset(self):
+        # Retrieves only items in the specified cart (via cart_pk)
+        return CartItem.objects.filter(cart_id=self.kwargs['cart_pk'])
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return AddCartItemSerializer
+        elif self.request.method == 'PATCH':
+            return UpdateCartItemSerializer
+        return CartItemSerializer
+
+    def get_serializer_context(self):
+        # Passes the cart ID to serializers that require it
+        return {"cart_id": self.kwargs["cart_pk"]}
+
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
@@ -89,24 +160,24 @@ class OrderViewSet(viewsets.ModelViewSet):
 # class CartDetailView(viewsets.ModelViewSet):
 #     queryset = Cart.objects.all()
 #     serializer_class = CartSerializer
-class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
-    queryset = Cart.objects.all()
-    serializer_class = CartSerializer
+# class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
+#     queryset = Cart.objects.all()
+#     serializer_class = CartSerializer
     
-class CartItemViewSet(viewsets.ModelViewSet):
-    # queryset = CartItem.objects.all()
-    serializer_class = CartItemSerializer
-    http_method_names = ['get','post','patch','delete']
-    def get_queryset(self):
-        return CartItem.objects.filter(cart_id=self.kwargs['cart_pk'])
+# class CartItemViewSet(viewsets.ModelViewSet):
+#     # queryset = CartItem.objects.all()
+#     serializer_class = CartItemSerializer
+#     http_method_names = ['get','post','patch','delete']
+#     def get_queryset(self):
+#         return CartItem.objects.filter(cart_id=self.kwargs['cart_pk'])
     
-    def get_serializer_class(self):
-        if self.request.method == 'POST':
-            return AddCartItemSerializer
-        elif self.request.method == 'PATCH':
-            return UpdateCartItemSerializer
-        return CartItemSerializer
+#     def get_serializer_class(self):
+#         if self.request.method == 'POST':
+#             return AddCartItemSerializer
+#         elif self.request.method == 'PATCH':
+#             return UpdateCartItemSerializer
+#         return CartItemSerializer
     
-    def get_serializer_context(self):
-        return {"cart_id": self.kwargs["cart_pk"]}
+#     def get_serializer_context(self):
+#         return {"cart_id": self.kwargs["cart_pk"]}
     
