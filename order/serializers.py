@@ -6,34 +6,29 @@ from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist
 
 class CartItemSerializer(serializers.ModelSerializer):
-    # Fields to display flower details within CartItem without using a nested serializer
     flower_name = serializers.ReadOnlyField(source='flower.flower_name')
     price = serializers.ReadOnlyField(source='flower.price')
-    total_price = serializers.SerializerMethodField()  # Shows total price per item
+    total_price = serializers.SerializerMethodField()
 
     class Meta:
         model = CartItem
         fields = ['id', 'flower', 'flower_name', 'quantity', 'price', 'total_price']
 
     def get_total_price(self, obj):
-        # Uses CartItem's get_total method to calculate the total price per item
         return obj.get_total()
 
 
 class CartSerializer(serializers.ModelSerializer):
-    items = CartItemSerializer(many=True, read_only=True)  # Serializes all cart items
-    grand_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)  # Directly from the model
-
+    items = CartItemSerializer(many=True, read_only=True)
+    grand_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     class Meta:
         model = Cart
         fields = ['id', 'user', 'created_at', 'updated_at', 'items', 'grand_total']
     
     def create(self, validated_data):
         items_data = validated_data.pop('items', [])
-        # Create the cart first
         cart = Cart.objects.create(**validated_data)
 
-        # Now that cart has a primary key, create related items
         for item_data in items_data:
             CartItem.objects.create(cart=cart, **item_data)
 
@@ -51,13 +46,12 @@ class AddCartItemSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         flower_id = data["flower_id"]
-        quantity = data.get("quantity", 1)  # Default to 1 if quantity is not provided
+        quantity = data.get("quantity", 1)
         try:
             flower = Flower.objects.get(id=flower_id)
         except Flower.DoesNotExist:
             raise serializers.ValidationError("Invalid flower ID.")
 
-        # Check stock availability before proceeding
         if flower.stock < quantity:
             raise serializers.ValidationError("Not enough stock available for this item.")
         
@@ -74,7 +68,6 @@ class AddCartItemSerializer(serializers.ModelSerializer):
         except ObjectDoesNotExist:
             raise serializers.ValidationError("Invalid cart or flower ID.")
 
-        # Get or create the cart item and update quantity if it already exists
         cart_item, created = CartItem.objects.get_or_create(
             cart=cart,
             flower=flower,
@@ -85,11 +78,9 @@ class AddCartItemSerializer(serializers.ModelSerializer):
             cart_item.quantity += quantity
             cart_item.save()
 
-        # Update the flower stock
         flower.stock -= quantity
         flower.save()
-        
-        # Recalculate the cart's grand total
+
         cart.calculate_grand_total()
         
         self.instance = cart_item
@@ -109,7 +100,6 @@ class UpdateCartItemSerializer(serializers.ModelSerializer):
         flower = cart_item.flower
         current_quantity = cart_item.quantity
 
-        # Check if the quantity is being increased or decreased
         if new_quantity > current_quantity:
             quantity_diff = new_quantity - current_quantity
             if flower.stock < quantity_diff:

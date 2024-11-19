@@ -40,10 +40,8 @@ class Cart(models.Model):
         return f"Cart for {self.user.user.username}"
 
     def calculate_grand_total(self):
-        # Calculate the grand total based on related items
         total = sum(item.get_total() for item in self.items.all())
         self.grand_total = total
-        # Save only the grand_total field to avoid triggering save recursively
         self.save(update_fields=["grand_total"])
 
 class CartItem(models.Model):
@@ -52,16 +50,13 @@ class CartItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
 
     def get_total(self):
-        # Calculate total price for this item based on quantity and flower price
         return self.quantity * self.flower.price
 
     def save(self, *args, **kwargs):
-        # Save the item and update the cart's grand total
         super().save(*args, **kwargs)
         self.cart.calculate_grand_total()
 
     def delete(self, *args, **kwargs):
-        # Delete the item and update the cart's total
         super().delete(*args, **kwargs)
         self.cart.calculate_grand_total()
 
