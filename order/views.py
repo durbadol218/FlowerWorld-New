@@ -14,62 +14,6 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 
-# class CartViewSet(ListModelMixin,CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
-#     queryset = Cart.objects.all()
-#     serializer_class = CartSerializer
-#     permission_classes = [IsAuthenticated]
-#     http_method_names = ['get', 'post', 'delete']
-    
-#     def get_queryset(self):
-#         # Ensuring we're filtering carts by the Account associated with the authenticated User
-#         # if self.request.user.is_staff:  # Check if the user is an admin
-#         #     return Cart.objects.all()
-#         account = getattr(self.request.user, 'account', None)
-#         if account and account.user_type == "Admin":  # Custom admin check
-#             return Cart.objects.all()  # Admins can see all carts
-#         if account:
-#             return Cart.objects.filter(user=account)
-#         else:
-#             print("Error: No Account associated with this user")
-#             return Cart.objects.none()  # No Account found, return empty queryset
-
-#     # def get_queryset(self):
-#     #     # Ensure the cart is filtered for the authenticated user
-#     #     return Cart.objects.filter(user=self.request.user)
-
-#     def perform_create(self, serializer):
-#         account = getattr(self.request.user, 'account', None)
-#         if account and account.user_type != 'Admin':
-#             serializer.save(user=account)
-#             serializer.instance.calculate_grand_total()
-#         else:
-#             print("Error: No Account associated with this user")
-#             raise ValueError("No account associated with the authenticated user./ Admin users cannot create carts.")
-#         # cart = serializer.save()
-#         # cart.calculate_grand_total()
-
-#     def perform_update(self, serializer):
-#         cart = serializer.save()
-#         cart.calculate_grand_total()
-
-#     def perform_destroy(self, instance):
-#         if instance.pk:  # Ensure that the Cart instance has a primary key
-#             super().perform_destroy(instance)
-#             instance.calculate_grand_total()
-#         else:
-#             raise ValueError("Cannot delete a cart without a primary key.")
-
-#     def list(self, request, *args, **kwargs):
-#         carts = self.get_queryset()
-#         for cart in carts:
-#             cart.calculate_grand_total()
-#         return super().list(request, *args, **kwargs)
-
-#     def retrieve(self, request, *args, **kwargs):
-#         cart = self.get_object()
-#         cart.calculate_grand_total()
-#         return super().retrieve(request, *args, **kwargs)
-
 class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
     queryset = Cart.objects.all()
     serializer_class = CartSerializer
@@ -95,14 +39,17 @@ class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyM
         
         cart = serializer.save(user=account)
         cart.calculate_grand_total()
+        cart.save()
         
     def perform_update(self, serializer):
         #Update cart and recalculate total.
         cart = serializer.save()
         cart.calculate_grand_total()
-
+        cart.save()
+        
     def perform_destroy(self, instance):
         #Ensure cart deletion is handled properly.
+        instance.calculate_grand_total()
         instance.items.all().delete()
         instance.delete()
 
@@ -119,47 +66,6 @@ class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyM
         cart.calculate_grand_total()
         return super().retrieve(request, *args, **kwargs)
 
-
-
-# class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
-#     queryset = Cart.objects.all()
-#     serializer_class = CartSerializer
-#     permission_classes = [IsAuthenticated]
-#     http_method_names = ['get', 'post', 'delete']
-
-#     def get_queryset(self):
-#         # Ensure that the cart is filtered for the authenticated user
-#         return Cart.objects.filter(user=self.request.user)
-
-#     def perform_create(self, serializer):
-#         # Create the cart and associate it with the logged-in user
-#         serializer.save(user=self.request.user)
-#         cart = serializer.instance
-#         cart.calculate_grand_total()
-
-#     def perform_update(self, serializer):
-#         # Recalculate grand total after updating the cart
-#         cart = serializer.save()
-#         cart.calculate_grand_total()
-
-#     def perform_destroy(self, instance):
-#         # Recalculate grand total after deleting the cart
-#         super().perform_destroy(instance)
-#         instance.calculate_grand_total()
-
-#     def list(self, request, *args, **kwargs):
-#         # Ensure that grand total is calculated for each cart item when listing
-#         carts = self.get_queryset()
-#         for cart in carts:
-#             cart.calculate_grand_total()  # Ensure the grand total is recalculated
-#         return super().list(request, *args, **kwargs)
-
-#     def retrieve(self, request, *args, **kwargs):
-#         # Recalculate grand total when retrieving a single cart
-#         cart = self.get_object()
-#         cart.calculate_grand_total()  # Ensure grand total is up-to-date
-#         return super().retrieve(request, *args, **kwargs)
-    
 class CartItemViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
 

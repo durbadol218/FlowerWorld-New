@@ -8,14 +8,19 @@ from django.core.exceptions import ObjectDoesNotExist
 class CartItemSerializer(serializers.ModelSerializer):
     flower_name = serializers.ReadOnlyField(source='flower.flower_name')
     price = serializers.ReadOnlyField(source='flower.price')
+    stock = serializers.ReadOnlyField(source='flower.stock')
+    image_url = serializers.SerializerMethodField()
     total_price = serializers.SerializerMethodField()
 
     class Meta:
         model = CartItem
-        fields = ['id', 'flower', 'flower_name', 'quantity', 'price', 'total_price']
+        fields = ['id', 'flower', 'flower_name', 'quantity', 'price', 'stock', 'image_url', 'total_price']
 
     def get_total_price(self, obj):
         return obj.get_total()
+    
+    def get_image_url(self, obj):
+        return obj.flower.image.url if obj.flower.image else None  # Ensure the image URL is returned
 
 
 class CartSerializer(serializers.ModelSerializer):
@@ -36,6 +41,7 @@ class CartSerializer(serializers.ModelSerializer):
         cart.calculate_grand_total()
         cart.save()
         return cart
+
 class AddCartItemSerializer(serializers.ModelSerializer):
     flower_id = serializers.IntegerField()
     quantity = serializers.IntegerField(default=1)
@@ -71,7 +77,7 @@ class AddCartItemSerializer(serializers.ModelSerializer):
         cart_item, created = CartItem.objects.get_or_create(
             cart=cart,
             flower=flower,
-            defaults={'quantity': quantity}
+            defaults={'quantity': quantity, 'price_at_added': flower.price}
         )
 
         if not created:
@@ -82,7 +88,7 @@ class AddCartItemSerializer(serializers.ModelSerializer):
         flower.save()
 
         cart.calculate_grand_total()
-        
+
         self.instance = cart_item
         return self.instance
 
