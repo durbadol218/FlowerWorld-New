@@ -28,8 +28,9 @@ class CartSerializer(serializers.ModelSerializer):
     grand_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
     class Meta:
         model = Cart
-        fields = ['id', 'user', 'created_at', 'updated_at', 'items', 'grand_total']
-    
+        fields = ['id', 'user', 'is_active', 'created_at', 'updated_at', 'items', 'grand_total']
+        read_only_fields = ['user']
+        
     def create(self, validated_data):
         items_data = validated_data.pop('items', [])
         cart = Cart.objects.create(**validated_data)

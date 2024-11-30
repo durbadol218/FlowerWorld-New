@@ -13,59 +13,88 @@ from rest_framework.mixins import ListModelMixin,CreateModelMixin,RetrieveModelM
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 
 class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
     queryset = Cart.objects.all()
     serializer_class = CartSerializer
     # authentication_classes = [TokenAuthentication]
+    authentication_classes = [SessionAuthentication, BasicAuthentication, TokenAuthentication]
     permission_classes = [IsAuthenticated]
     http_method_names = ['get', 'post', 'delete']
 
     def get_queryset(self):
-        #Filter carts by user or allow admins to view all carts.
         account = getattr(self.request.user, 'account', None)
         if not account:
-            return Cart.objects.none()  # No account found, return an empty queryset
-
+            return Cart.objects.none()
         if account.user_type == "Admin":
             return Cart.objects.all()
-        return Cart.objects.filter(user=account)
+        return Cart.objects.filter(user=account, is_active=True)
 
     def perform_create(self, serializer):
-        #Handle cart creation.
         account = getattr(self.request.user, 'account', None)
         if not account or account.user_type == 'Admin':
-            raise PermissionDenied("Only customers can create carts.")
+            raise ValidationError("Only customers can create carts.")
         
+        existing_cart = Cart.objects.filter(user=account, is_active=True).first()
+        # if existing_cart:
+        #     existing_cart.is_active = False
+        #     existing_cart.save()
+        # existing_cart = Cart.objects.filter(user=account).first()
+        if existing_cart:
+            raise ValidationError("A cart already exists for this user.")
         cart = serializer.save(user=account)
         cart.calculate_grand_total()
         cart.save()
         
     def perform_update(self, serializer):
-        #Update cart and recalculate total.
         cart = serializer.save()
         cart.calculate_grand_total()
         cart.save()
         
     def perform_destroy(self, instance):
-        #Ensure cart deletion is handled properly.
         instance.calculate_grand_total()
         instance.items.all().delete()
         instance.delete()
+        #Or
+        #instance.is_active = False
+        #instance.save()
 
+    # def list(self, request, *args, **kwargs):
+    #     carts = self.get_queryset()
+    #     for cart in carts:
+    #         cart.calculate_grand_total()
+    #     return super().list(request, *args, **kwargs)
     def list(self, request, *args, **kwargs):
-        #List all carts with grand total recalculated.
-        carts = self.get_queryset()
-        for cart in carts:
+        account = getattr(self.request.user, 'account', None)
+        if not account:
+            return Response({"detail": "No account found."}, status=status.HTTP_404_NOT_FOUND)
+        queryset = self.get_queryset()
+        for cart in queryset:
             cart.calculate_grand_total()
-        return super().list(request, *args, **kwargs)
+            cart.save()  # Ensure updated values are persisted
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
 
     def retrieve(self, request, *args, **kwargs):
-        #Retrieve a cart and recalculate grand total.
         cart = self.get_object()
         cart.calculate_grand_total()
         return super().retrieve(request, *args, **kwargs)
+    
+    # def destroy(self, request, *args, **kwargs):
+    #     """
+    #     Prevent users from deleting their cart if necessary.
+    #     """
+    #     cart = self.get_object()
+    #     account = getattr(self.request.user, 'account', None)
 
+    #     # Allow only admins to delete carts
+    #     if account.user_type != "Admin":
+    #         raise PermissionError("Only admins can delete carts.")
+    #     return super().destroy(request, *args, **kwargs)
+    
 class CartItemViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
 

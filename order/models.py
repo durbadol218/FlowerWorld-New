@@ -5,6 +5,7 @@ from decimal import Decimal
 
 class Cart(models.Model):
     user = models.ForeignKey(Account, on_delete=models.CASCADE)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
@@ -13,7 +14,7 @@ class Cart(models.Model):
     # def __str__(self):
     #     return f"Cart for {self.user.user.username}"
     def __str__(self):
-        return f"Cart ({self.id}) for {self.user.user.username} - {self.items.count()} items, Total: ${self.grand_total}"
+        return f"Cart ({self.id}) for {self.user.user.username} - {self.items.count()} items, Total: ${self.grand_total}, (Active: {self.is_active})"
 
     # def calculate_grand_total(self):
     #     total = sum(item.get_total() for item in self.items.all())
