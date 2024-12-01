@@ -97,6 +97,8 @@ CORS_ALLOW_HEADERS = [
     'X-Requested-With',
 ]
 
+CORS_ALLOW_ALL_ORIGINS = True
+
 CSRF_TRUSTED_ORIGINS = ['https://flowerworld-modified.onrender.com','https://*.127.0.0.1',]
 
 ROOT_URLCONF = 'FlowerWorld.urls'
