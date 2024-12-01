@@ -90,16 +90,34 @@ class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyM
 
     #     serializer = self.get_serializer(queryset, many=True)
     #     return Response(serializer.data)
+    # def list(self, request, *args, **kwargs):
+    #     if not request.user.is_authenticated:
+    #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
+
+    #     # Check if the `account` attribute exists on the user
+    #     account = getattr(request.user, 'account', None)
+    #     if not account:
+    #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
+
+    #     # Process the cart data
+    #     queryset = self.get_queryset()
+    #     for cart in queryset:
+    #         cart.calculate_grand_total()
+    #         cart.save()
+
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     return Response(serializer.data)
+    
     def list(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
 
-        # Check if the `account` attribute exists on the user
         account = getattr(request.user, 'account', None)
         if not account:
-            return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
+            # Optionally, create an account if it doesn't exist
+            account = Account.objects.create(user=request.user)
 
-        # Process the cart data
+        # Proceed with the rest of the logic
         queryset = self.get_queryset()
         for cart in queryset:
             cart.calculate_grand_total()
