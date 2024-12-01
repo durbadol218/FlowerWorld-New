@@ -65,15 +65,29 @@ class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyM
     #     for cart in carts:
     #         cart.calculate_grand_total()
     #     return super().list(request, *args, **kwargs)
+    # def list(self, request, *args, **kwargs):
+    #     account = getattr(self.request.user, 'account', None)
+    #     if not account:
+    #         return Response({"detail": "No account found."}, status=status.HTTP_404_NOT_FOUND)
+    #     queryset = self.get_queryset()
+    #     for cart in queryset:
+    #         cart.calculate_grand_total()
+    #         cart.save()  # Ensure updated values are persisted
+        
+    #     serializer = self.get_serializer(queryset, many=True)
+    #     return Response(serializer.data)
     def list(self, request, *args, **kwargs):
-        account = getattr(self.request.user, 'account', None)
+        if not request.user.is_authenticated:
+            return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
+        account = getattr(request.user, 'account', None)
         if not account:
-            return Response({"detail": "No account found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
+
         queryset = self.get_queryset()
         for cart in queryset:
             cart.calculate_grand_total()
-            cart.save()  # Ensure updated values are persisted
-        
+            cart.save()
+
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
