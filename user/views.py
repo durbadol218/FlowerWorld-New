@@ -81,14 +81,14 @@ class UserLoginApiView(APIView):
             user = authenticate(username=username, password=password)
             
             if user:
-                token, _ = Token.objects.get_or_create(user=user)
+                token, created = Token.objects.get_or_create(user=user)
                 account, created = models.Account.objects.get_or_create(user=user)
                 print(account)
                 login(request, user)
                 return Response({'token':token.key, 'user_id': account.id})
             else:
                 return  Response({'error':'Invalid Credential'})
-        return Response(serializer.errors)
+        return Response(serializer.errors,status=400)
 class UserProfileUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 
