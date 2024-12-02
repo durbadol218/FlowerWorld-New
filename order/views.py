@@ -11,7 +11,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from rest_framework.mixins import ListModelMixin,CreateModelMixin,RetrieveModelMixin, DestroyModelMixin
 from rest_framework.exceptions import ValidationError
-# from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 # from rest_framework.authentication import TokenAuthentication
 #from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 
@@ -149,6 +149,7 @@ class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyM
     queryset = Cart.objects.all()
     serializer_class = CartSerializer
     http_method_names = ['get', 'post', 'delete']
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         account = getattr(self.request.user, 'account', None)
