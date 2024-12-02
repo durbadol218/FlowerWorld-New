@@ -15,136 +15,180 @@ from rest_framework.exceptions import ValidationError
 # from rest_framework.authentication import TokenAuthentication
 #from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 
+# class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
+#     queryset = Cart.objects.all()
+#     serializer_class = CartSerializer
+#     # authentication_classes = [TokenAuthentication]
+#     # # authentication_classes = [SessionAuthentication, BasicAuthentication, TokenAuthentication]
+#     # permission_classes = [IsAuthenticated]
+#     http_method_names = ['get', 'post', 'delete']
+
+#     def get_queryset(self):
+#         account = getattr(self.request.user, 'account', None)
+#         if not account:
+#             return Cart.objects.none()
+#         if account.user_type == "Admin":
+#             return Cart.objects.all()
+#         return Cart.objects.filter(user=account, is_active=True)
+
+#     def perform_create(self, serializer):
+#         account = getattr(self.request.user, 'account', None)
+#         if not account or account.user_type == 'Admin':
+#             raise ValidationError("Only customers can create carts.")
+        
+#         existing_cart = Cart.objects.filter(user=account, is_active=True).first()
+#         # if existing_cart:
+#         #     existing_cart.is_active = False
+#         #     existing_cart.save()
+#         # existing_cart = Cart.objects.filter(user=account).first()
+#         if existing_cart:
+#             raise ValidationError("A cart already exists for this user.")
+#         cart = serializer.save(user=account)
+#         cart.calculate_grand_total()
+#         cart.save()
+        
+#     def perform_update(self, serializer):
+#         cart = serializer.save()
+#         cart.calculate_grand_total()
+#         cart.save()
+        
+#     def perform_destroy(self, instance):
+#         instance.calculate_grand_total()
+#         instance.items.all().delete()
+#         instance.delete()
+#         #Or
+#         #instance.is_active = False
+#         #instance.save()
+
+#     # def list(self, request, *args, **kwargs):
+#     #     carts = self.get_queryset()
+#     #     for cart in carts:
+#     #         cart.calculate_grand_total()
+#     #     return super().list(request, *args, **kwargs)
+#     # def list(self, request, *args, **kwargs):
+#     #     account = getattr(self.request.user, 'account', None)
+#     #     if not account:
+#     #         return Response({"detail": "No account found."}, status=status.HTTP_404_NOT_FOUND)
+#     #     queryset = self.get_queryset()
+#     #     for cart in queryset:
+#     #         cart.calculate_grand_total()
+#     #         cart.save()  # Ensure updated values are persisted
+        
+#     #     serializer = self.get_serializer(queryset, many=True)
+#     #     return Response(serializer.data)
+#     # def list(self, request, *args, **kwargs):
+#     #     if not request.user.is_authenticated:
+#     #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
+#     #     account = getattr(request.user, 'account', None)
+#     #     if not account:
+#     #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
+
+#     #     queryset = self.get_queryset()
+#     #     for cart in queryset:
+#     #         cart.calculate_grand_total()
+#     #         cart.save()
+
+#     #     serializer = self.get_serializer(queryset, many=True)
+#     #     return Response(serializer.data)
+#     # def list(self, request, *args, **kwargs):
+#     #     if not request.user.is_authenticated:
+#     #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
+
+#     #     # Check if the `account` attribute exists on the user
+#     #     account = getattr(request.user, 'account', None)
+#     #     if not account:
+#     #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
+
+#     #     # Process the cart data
+#     #     queryset = self.get_queryset()
+#     #     for cart in queryset:
+#     #         cart.calculate_grand_total()
+#     #         cart.save()
+
+#     #     serializer = self.get_serializer(queryset, many=True)
+#     #     return Response(serializer.data)
+    
+#     def list(self, request, *args, **kwargs):
+#         if not request.user.is_authenticated:
+#             return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
+
+#         account = getattr(request.user, 'account', None)
+#         if not account:
+#             # Optionally, create an account if it doesn't exist
+#             account = Account.objects.create(user=request.user)
+
+#         # Proceed with the rest of the logic
+#         queryset = self.get_queryset()
+#         for cart in queryset:
+#             cart.calculate_grand_total()
+#             cart.save()
+
+#         serializer = self.get_serializer(queryset, many=True)
+#         return Response(serializer.data)
+
+
+
+#     def retrieve(self, request, *args, **kwargs):
+#         cart = self.get_object()
+#         cart.calculate_grand_total()
+#         return super().retrieve(request, *args, **kwargs)
+    
+#     # def destroy(self, request, *args, **kwargs):
+#     #     """
+#     #     Prevent users from deleting their cart if necessary.
+#     #     """
+#     #     cart = self.get_object()
+#     #     account = getattr(self.request.user, 'account', None)
+
+#     #     # Allow only admins to delete carts
+#     #     if account.user_type != "Admin":
+#     #         raise PermissionError("Only admins can delete carts.")
+#     #     return super().destroy(request, *args, **kwargs)
+    
 class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
     queryset = Cart.objects.all()
     serializer_class = CartSerializer
-    # authentication_classes = [TokenAuthentication]
-    # # authentication_classes = [SessionAuthentication, BasicAuthentication, TokenAuthentication]
-    # permission_classes = [IsAuthenticated]
     http_method_names = ['get', 'post', 'delete']
 
     def get_queryset(self):
         account = getattr(self.request.user, 'account', None)
         if not account:
             return Cart.objects.none()
-        if account.user_type == "Admin":
-            return Cart.objects.all()
-        return Cart.objects.filter(user=account, is_active=True)
+        return Cart.objects.filter(user=account, is_active=True) if account.user_type != "Admin" else Cart.objects.all()
 
     def perform_create(self, serializer):
         account = getattr(self.request.user, 'account', None)
         if not account or account.user_type == 'Admin':
             raise ValidationError("Only customers can create carts.")
         
-        existing_cart = Cart.objects.filter(user=account, is_active=True).first()
-        # if existing_cart:
-        #     existing_cart.is_active = False
-        #     existing_cart.save()
-        # existing_cart = Cart.objects.filter(user=account).first()
-        if existing_cart:
+        if Cart.objects.filter(user=account, is_active=True).exists():
             raise ValidationError("A cart already exists for this user.")
+        
         cart = serializer.save(user=account)
         cart.calculate_grand_total()
         cart.save()
-        
+
     def perform_update(self, serializer):
         cart = serializer.save()
         cart.calculate_grand_total()
         cart.save()
-        
+
     def perform_destroy(self, instance):
-        instance.calculate_grand_total()
         instance.items.all().delete()
         instance.delete()
-        #Or
-        #instance.is_active = False
-        #instance.save()
 
-    # def list(self, request, *args, **kwargs):
-    #     carts = self.get_queryset()
-    #     for cart in carts:
-    #         cart.calculate_grand_total()
-    #     return super().list(request, *args, **kwargs)
-    # def list(self, request, *args, **kwargs):
-    #     account = getattr(self.request.user, 'account', None)
-    #     if not account:
-    #         return Response({"detail": "No account found."}, status=status.HTTP_404_NOT_FOUND)
-    #     queryset = self.get_queryset()
-    #     for cart in queryset:
-    #         cart.calculate_grand_total()
-    #         cart.save()  # Ensure updated values are persisted
-        
-    #     serializer = self.get_serializer(queryset, many=True)
-    #     return Response(serializer.data)
-    # def list(self, request, *args, **kwargs):
-    #     if not request.user.is_authenticated:
-    #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
-    #     account = getattr(request.user, 'account', None)
-    #     if not account:
-    #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
-
-    #     queryset = self.get_queryset()
-    #     for cart in queryset:
-    #         cart.calculate_grand_total()
-    #         cart.save()
-
-    #     serializer = self.get_serializer(queryset, many=True)
-    #     return Response(serializer.data)
-    # def list(self, request, *args, **kwargs):
-    #     if not request.user.is_authenticated:
-    #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
-
-    #     # Check if the `account` attribute exists on the user
-    #     account = getattr(request.user, 'account', None)
-    #     if not account:
-    #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
-
-    #     # Process the cart data
-    #     queryset = self.get_queryset()
-    #     for cart in queryset:
-    #         cart.calculate_grand_total()
-    #         cart.save()
-
-    #     serializer = self.get_serializer(queryset, many=True)
-    #     return Response(serializer.data)
-    
     def list(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
-            return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "Authentication required."}, status=status.HTTP_403_FORBIDDEN)
 
-        account = getattr(request.user, 'account', None)
-        if not account:
-            # Optionally, create an account if it doesn't exist
-            account = Account.objects.create(user=request.user)
-
-        # Proceed with the rest of the logic
         queryset = self.get_queryset()
         for cart in queryset:
             cart.calculate_grand_total()
             cart.save()
-
+        
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-
-
-    def retrieve(self, request, *args, **kwargs):
-        cart = self.get_object()
-        cart.calculate_grand_total()
-        return super().retrieve(request, *args, **kwargs)
-    
-    # def destroy(self, request, *args, **kwargs):
-    #     """
-    #     Prevent users from deleting their cart if necessary.
-    #     """
-    #     cart = self.get_object()
-    #     account = getattr(self.request.user, 'account', None)
-
-    #     # Allow only admins to delete carts
-    #     if account.user_type != "Admin":
-    #         raise PermissionError("Only admins can delete carts.")
-    #     return super().destroy(request, *args, **kwargs)
-    
 class CartItemViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
 
