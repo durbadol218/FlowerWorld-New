@@ -12,6 +12,10 @@ from django.template.loader import render_to_string
 from rest_framework.mixins import ListModelMixin,CreateModelMixin,RetrieveModelMixin, DestroyModelMixin
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
+# from django.views.decorators.csrf import csrf_exempt
+# from django.utils.decorators import method_decorator
+
 # from rest_framework.authentication import TokenAuthentication
 #from rest_framework.authentication import SessionAuthentication, BasicAuthentication
 
@@ -144,8 +148,11 @@ from rest_framework.permissions import IsAuthenticated
 #     #     if account.user_type != "Admin":
 #     #         raise PermissionError("Only admins can delete carts.")
 #     #     return super().destroy(request, *args, **kwargs)
-    
+
+
+# @method_decorator(csrf_exempt, name='dispatch')
 class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
+    authentication_classes = [TokenAuthentication]
     queryset = Cart.objects.all()
     serializer_class = CartSerializer
     http_method_names = ['get', 'post', 'delete']
@@ -179,9 +186,6 @@ class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyM
         instance.delete()
 
     def list(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return Response({"detail": "Authentication required."}, status=status.HTTP_403_FORBIDDEN)
-
         queryset = self.get_queryset()
         for cart in queryset:
             cart.calculate_grand_total()

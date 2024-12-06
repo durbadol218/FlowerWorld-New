@@ -89,6 +89,7 @@ class UserLoginApiView(APIView):
             else:
                 return  Response({'error':'Invalid Credential'})
         return Response(serializer.errors,status=400)
+
 class UserProfileUpdateView(APIView):
     permission_classes = [IsAuthenticated]
 

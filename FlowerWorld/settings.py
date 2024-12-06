@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'corsheaders',
 ]
 
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
 # REST_FRAMEWORK = {
 #     'DEFAULT_AUTHENTICATION_CLASSES': [
 #         'rest_framework.authentication.BasicAuthentication',
@@ -66,12 +68,19 @@ INSTALLED_APPS = [
 
 
 
-# REST_FRAMEWORK = {
-#     "DEFAULT_PERMISSION_CLASSES":
-#         [
-#             "rest_framework.permissions.IsAuthenticated",
-#         ]
-# }
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES":
+        [
+            "rest_framework.permissions.IsAuthenticated",
+        ]
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+    ],
+}
+
 
 
 MIDDLEWARE = [
