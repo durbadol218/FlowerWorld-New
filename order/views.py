@@ -158,13 +158,13 @@ class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyM
     http_method_names = ['get', 'post', 'delete']
     permission_classes = [IsAuthenticated]
 
-    # def get_queryset(self):
-    #     account = getattr(self.request.user, 'account', None)
-    #     print(f"Account: {account}")  # Debug print
-    #     if not account:
-    #         return Cart.objects.none()
-    #     print(f"User type: {account.user_type}")  # Debug print
-    #     return Cart.objects.filter(user=account, is_active=True) if account.user_type != "Admin" else Cart.objects.all()
+    def get_queryset(self):
+        account = getattr(self.request.user, 'account', None)
+        print(f"Account: {account}")  # Debug print
+        if not account:
+            return Cart.objects.none()
+        print(f"User type: {account.user_type}")  # Debug print
+        return Cart.objects.filter(user=account, is_active=True) if account.user_type != "Admin" else Cart.objects.all()
 
     def perform_create(self, serializer):
         account = getattr(self.request.user, 'account', None)
