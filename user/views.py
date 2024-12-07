@@ -71,7 +71,11 @@ def activateAccount(request, uid64, token):
         return redirect('login')
     else:
         return redirect('register')
-    
+
+# from django.views.decorators.csrf import csrf_exempt
+# from django.utils.decorators import method_decorator
+
+# @method_decorator(csrf_exempt, name='dispatch')
 class UserLoginApiView(APIView):
     def post(self, request):
         serializer = serializers.UserLoginSerializer(data=self.request.data)
@@ -84,6 +88,7 @@ class UserLoginApiView(APIView):
                 token, created = Token.objects.get_or_create(user=user)
                 account, created = models.Account.objects.get_or_create(user=user)
                 print(account)
+                print(f"Generated Token: {token.key}")
                 login(request, user)
                 return Response({'token':token.key, 'user_id': account.id})
             else:
