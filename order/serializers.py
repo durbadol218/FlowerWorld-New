@@ -127,34 +127,183 @@ class UpdateCartItemSerializer(serializers.ModelSerializer):
 
 class OrderItemSerializer(serializers.ModelSerializer):
     sub_total = serializers.SerializerMethodField()
+    flower_name = serializers.ReadOnlyField(source='flower.flower_name')
+    flower_price = serializers.ReadOnlyField(source='flower.price')
+
     class Meta:
         model = OrderItem
-        fields = ['id','flower','quantity','sub_total']
-    
+        fields = ['id', 'flower_id', 'flower_name', 'quantity', 'flower_price', 'sub_total']
+
     def get_sub_total(self, obj):
         return obj.get_total()
-    
-# Order Serializer
-class OrderSerializer(serializers.ModelSerializer):
-    username = serializers.SerializerMethodField()
-    flower_names = serializers.SerializerMethodField()
-    flower_prices = serializers.SerializerMethodField()
-    # items = CartItemSerializer(source='cart.items', many=True, read_only=True)  # Serialize the items from the related cart
-    items = OrderItemSerializer(many=True, read_only=True) # Serialize the items from the related
+
+class CreateOrderSerializer(serializers.ModelSerializer):
+    cart_id = serializers.IntegerField(write_only=True)
+    items = OrderItemSerializer(source='order_items_relation', many=True, read_only=True)
+    shipping_address = serializers.CharField(max_length=255, required=True)  # Add this line
+    payment_status = serializers.CharField(read_only=True)  # Add this line
     class Meta:
         model = Order
-        fields = ['id', 'user', 'username', 'placed_time', 'status', 'total_amount', 'items', 'flower_names', 'flower_prices']
+        fields = ['id', 'user', 'cart_id', 'placed_time', 'status', 'payment_status', 'shipping_address','items']
 
-    def get_username(self, obj):
-        return obj.user.user.username if obj.user else None
+    def validate_cart_id(self, value):
+        try:
+            cart = Cart.objects.get(id=value, is_active=True)
+        except Cart.DoesNotExist:
+            raise serializers.ValidationError("Cart does not exist or is inactive.")
+        
+        if not cart.items.exists():
+            raise serializers.ValidationError("Cannot place an order with an empty cart.")
+        
+        return value
 
-    def get_flower_names(self, obj):
-        if obj.cart and obj.cart.items.exists():
-            return ", ".join([item.flower.flower_name for item in obj.cart.items.all()])
-        return None
+    # def create(self, validated_data):
+    #     # user = self.context['request'].user
+    #     user = validated_data.pop('user')
+    #     cart_id = validated_data.pop('cart_id')
+    #     shipping_address = validated_data.pop('shipping_address')
+        
+    #     # Retrieve the cart and its items
+    #     cart = Cart.objects.get(id=cart_id)
+    #     if not cart.is_active:
+    #         raise serializers.ValidationError("This cart is inactive and cannot be used to place an order.")
+        
+    #     if not cart.items.exists():
+    #         raise serializers.ValidationError("Cannot place an order with an empty cart.")
+    
+    #     cart_items = cart.items.all()
 
-    def get_flower_prices(self, obj):
-        if obj.cart and obj.cart.items.exists():
-            return ", ".join([f"${item.flower.price}" for item in obj.cart.items.all()])
-        return None
+    #     # Create the order
+    #     order = Order.objects.create(user=user, cart=cart)
+        
+    #     # Transfer CartItems to OrderItems
+    #     order_items = [
+    #         OrderItem(
+    #             order=order,
+    #             flower=item.flower,
+    #             quantity=item.quantity,
+    #             price_at_order_time=item.price_at_added  # Make sure price_at_added is valid
+    #         )
+    #         for item in cart_items
+    #     ]
+    #     OrderItem.objects.bulk_create(order_items)
+    #     # Transfer CartItems to OrderItems but do not remove items from the cart
+        
+    #     # # Create OrderItems without modifying the CartItems in the Cart
+    #     # order_items = []
+    #     # for item in cart_items:
+    #     #     # Link CartItem data to OrderItem, without modifying CartItems
+    #     #     order_item = OrderItem(
+    #     #         order=order,
+    #     #         flower=item.flower,
+    #     #         quantity=item.quantity,
+    #     #         price_at_order_time=item.price_at_added  # Price at the time the item was added to the cart
+    #     #     )
+    #     #     order_items.append(order_item)
+
+    #     # # Bulk create OrderItems
+    #     # OrderItem.objects.bulk_create(order_items)
+
+    #     # Calculate and save the total order amount
+    #     order.calculate_total_amount()
+
+    #     # Mark cart as inactive and save it
+    #     cart.is_active = False
+    #     cart.save()
+
+    #     return order
+
+    def create(self, validated_data):
+        user = validated_data.pop('user')
+        cart_id = validated_data.pop('cart_id')
+        shipping_address = validated_data.pop('shipping_address')
+
+        print(f"Received Cart ID: {cart_id}")
+
+        try:
+            cart = Cart.objects.get(id=cart_id)
+        except Cart.DoesNotExist:
+            raise serializers.ValidationError(f"Cart with ID {cart_id} does not exist.")
+
+        print(f"Cart ID: {cart.id}, Cart Active: {cart.is_active}")  # This should print the cart status
+
+        # Check if the cart is active
+        if not cart.is_active:
+            raise serializers.ValidationError("This cart is inactive and cannot be used to place an order.")
+
+        # Check if the cart has any items
+        if not cart.items.exists():
+            raise serializers.ValidationError("Cannot place an order with an empty cart.")
+
+        cart_items = cart.items.all()
+
+        # Create the order
+        order = Order.objects.create(user=user, cart=cart, shipping_address=shipping_address)
+
+        # Transfer CartItems to OrderItems
+        order_items = [
+            OrderItem(
+                order=order,
+                flower=item.flower,
+                quantity=item.quantity,
+                price_at_order_time=item.price_at_added  # Ensure price_at_added is valid
+            )
+            for item in cart_items
+        ]
+        OrderItem.objects.bulk_create(order_items)
+        order.calculate_total_amount()
+        cart.is_active = False
+        cart.save()
+        return order
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(source='order_items_relation', many=True, read_only=True)
+    username = serializers.ReadOnlyField(source='user.user.username')  # Renamed for consistency
+    shipping_address = serializers.CharField(read_only=True)  # Add this line
+    transaction_id = serializers.CharField(read_only=True)
+    payment_status = serializers.CharField(read_only=True)
+    class Meta:
+        model = Order
+        fields = ['id', 'user', 'username', 'placed_time', 'status', 'payment_status','transaction_id', 'total_amount', 'items','shipping_address']
+
+
+class ListOrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True)  # Include the related order items
+    shipping_address = serializers.CharField(read_only=True)  # Add this line
+    transaction_id = serializers.CharField(read_only=True) 
+    payment_status = serializers.CharField(read_only=True)
+    class Meta:
+        model = Order
+        fields = ('id', 'user', 'status','payment_status','transaction_id', 'total_amount', 'placed_time', 'items', 'shipping_address')  # 'status' field once
+
+    def get_items(self, obj):
+        """
+        Return a summary of items in the order.
+        """
+        return [
+            {
+                'flower_name': item.flower.flower_name,
+                'quantity': item.quantity,
+                'sub_total': item.get_total()
+            }
+            for item in obj.order_items_relation.all()
+        ]
+
+class UpdateOrderStatusSerializer(serializers.ModelSerializer):
+    status = serializers.ChoiceField(choices=Order.ORDER_STATUS)
+    transaction_id = serializers.CharField(required=False)
+    payment_status = serializers.ChoiceField(
+        choices=Order.PAYMENT_STATUS, required=False
+    )
+    class Meta:
+        model = Order
+        fields = ['status', 'payment_status', 'transaction_id']
+
+    def update(self, instance, validated_data):
+        instance.status = validated_data['status']
+        instance.payment_status = validated_data.get('payment_status', instance.payment_status)
+        instance.transaction_id = validated_data.get('transaction_id', instance.transaction_id)
+        instance.save()
+        return instance
 

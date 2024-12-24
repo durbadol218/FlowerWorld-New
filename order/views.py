@@ -11,144 +11,12 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from rest_framework.mixins import ListModelMixin,CreateModelMixin,RetrieveModelMixin, DestroyModelMixin
 from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,IsAdminUser
 from rest_framework.authentication import TokenAuthentication
-# from django.views.decorators.csrf import csrf_exempt
-# from django.utils.decorators import method_decorator
-
-# from rest_framework.authentication import TokenAuthentication
-#from rest_framework.authentication import SessionAuthentication, BasicAuthentication
-
-# class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
-#     queryset = Cart.objects.all()
-#     serializer_class = CartSerializer
-#     # authentication_classes = [TokenAuthentication]
-#     # # authentication_classes = [SessionAuthentication, BasicAuthentication, TokenAuthentication]
-#     # permission_classes = [IsAuthenticated]
-#     http_method_names = ['get', 'post', 'delete']
-
-#     def get_queryset(self):
-#         account = getattr(self.request.user, 'account', None)
-#         if not account:
-#             return Cart.objects.none()
-#         if account.user_type == "Admin":
-#             return Cart.objects.all()
-#         return Cart.objects.filter(user=account, is_active=True)
-
-#     def perform_create(self, serializer):
-#         account = getattr(self.request.user, 'account', None)
-#         if not account or account.user_type == 'Admin':
-#             raise ValidationError("Only customers can create carts.")
-        
-#         existing_cart = Cart.objects.filter(user=account, is_active=True).first()
-#         # if existing_cart:
-#         #     existing_cart.is_active = False
-#         #     existing_cart.save()
-#         # existing_cart = Cart.objects.filter(user=account).first()
-#         if existing_cart:
-#             raise ValidationError("A cart already exists for this user.")
-#         cart = serializer.save(user=account)
-#         cart.calculate_grand_total()
-#         cart.save()
-        
-#     def perform_update(self, serializer):
-#         cart = serializer.save()
-#         cart.calculate_grand_total()
-#         cart.save()
-        
-#     def perform_destroy(self, instance):
-#         instance.calculate_grand_total()
-#         instance.items.all().delete()
-#         instance.delete()
-#         #Or
-#         #instance.is_active = False
-#         #instance.save()
-
-#     # def list(self, request, *args, **kwargs):
-#     #     carts = self.get_queryset()
-#     #     for cart in carts:
-#     #         cart.calculate_grand_total()
-#     #     return super().list(request, *args, **kwargs)
-#     # def list(self, request, *args, **kwargs):
-#     #     account = getattr(self.request.user, 'account', None)
-#     #     if not account:
-#     #         return Response({"detail": "No account found."}, status=status.HTTP_404_NOT_FOUND)
-#     #     queryset = self.get_queryset()
-#     #     for cart in queryset:
-#     #         cart.calculate_grand_total()
-#     #         cart.save()  # Ensure updated values are persisted
-        
-#     #     serializer = self.get_serializer(queryset, many=True)
-#     #     return Response(serializer.data)
-#     # def list(self, request, *args, **kwargs):
-#     #     if not request.user.is_authenticated:
-#     #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
-#     #     account = getattr(request.user, 'account', None)
-#     #     if not account:
-#     #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
-
-#     #     queryset = self.get_queryset()
-#     #     for cart in queryset:
-#     #         cart.calculate_grand_total()
-#     #         cart.save()
-
-#     #     serializer = self.get_serializer(queryset, many=True)
-#     #     return Response(serializer.data)
-#     # def list(self, request, *args, **kwargs):
-#     #     if not request.user.is_authenticated:
-#     #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
-
-#     #     # Check if the `account` attribute exists on the user
-#     #     account = getattr(request.user, 'account', None)
-#     #     if not account:
-#     #         return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
-
-#     #     # Process the cart data
-#     #     queryset = self.get_queryset()
-#     #     for cart in queryset:
-#     #         cart.calculate_grand_total()
-#     #         cart.save()
-
-#     #     serializer = self.get_serializer(queryset, many=True)
-#     #     return Response(serializer.data)
-    
-#     def list(self, request, *args, **kwargs):
-#         if not request.user.is_authenticated:
-#             return Response({"detail": "No account found."}, status=status.HTTP_403_FORBIDDEN)
-
-#         account = getattr(request.user, 'account', None)
-#         if not account:
-#             # Optionally, create an account if it doesn't exist
-#             account = Account.objects.create(user=request.user)
-
-#         # Proceed with the rest of the logic
-#         queryset = self.get_queryset()
-#         for cart in queryset:
-#             cart.calculate_grand_total()
-#             cart.save()
-
-#         serializer = self.get_serializer(queryset, many=True)
-#         return Response(serializer.data)
-
-
-
-#     def retrieve(self, request, *args, **kwargs):
-#         cart = self.get_object()
-#         cart.calculate_grand_total()
-#         return super().retrieve(request, *args, **kwargs)
-    
-#     # def destroy(self, request, *args, **kwargs):
-#     #     """
-#     #     Prevent users from deleting their cart if necessary.
-#     #     """
-#     #     cart = self.get_object()
-#     #     account = getattr(self.request.user, 'account', None)
-
-#     #     # Allow only admins to delete carts
-#     #     if account.user_type != "Admin":
-#     #         raise PermissionError("Only admins can delete carts.")
-#     #     return super().destroy(request, *args, **kwargs)
-
+from django.db import transaction
+from .serializers import OrderSerializer, CreateOrderSerializer, ListOrderSerializer, UpdateOrderStatusSerializer
+from .models import Order, Cart
+from rest_framework.exceptions import ValidationError
 
 # @method_decorator(csrf_exempt, name='dispatch')
 class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
@@ -216,98 +84,91 @@ class CartItemViewSet(viewsets.ModelViewSet):
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    http_method_names = ['get', 'post', 'patch', 'put', 'delete', 'head', 'options']
-    
+    http_method_names = ['get', 'post', 'patch', 'delete']
+    permission_classes = [IsAuthenticated]  # Ensures that only authenticated users can access orders
+
     def get_queryset(self):
-        queryset = super().get_queryset()
-        customer_id = self.request.query_params.get('customer_id')
-        if customer_id:
-            queryset = queryset.filter(user_id=customer_id)
-        return queryset
+        user = self.request.user
 
+        # Check if the user is a superuser
+        if user.is_superuser:
+            return Order.objects.all()
+
+        # Get the related Account instance for the logged-in user
+        account = getattr(user, 'account', None)  # Assuming `Account` is a OneToOne relation with `User`
+        if not account:
+            return Order.objects.none()  # Return an empty queryset if no account is found
+
+        # Filter orders based on the Account instance
+        return Order.objects.filter(user=account)
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return CreateOrderSerializer
+        elif self.action == 'list':
+            return ListOrderSerializer
+        elif self.action == 'partial_update':
+            return UpdateOrderStatusSerializer
+        return OrderSerializer
+
+    @transaction.atomic
     def perform_create(self, serializer):
-        flower = serializer.validated_data.get('flower')
-        user_account = serializer.validated_data.get('user')
-        quantity = serializer.validated_data.get('quantity')
+        user = self.request.user
+        account = getattr(user, 'account', None)  # Assuming a OneToOne relation exists as `account`
+        if not account:
+            raise ValidationError("Associated account not found for the user.")
+
+        cart_id = serializer.validated_data.get("cart_id")
+        try:
+            cart = Cart.objects.get(id=cart_id, is_active=True)
+        except Cart.DoesNotExist:
+            raise ValidationError("The cart is inactive or does not exist.")
         
-        if flower and flower.stock >= quantity:
-            flower.stock -= quantity
-            flower.save()
-            total_amount = flower.price * quantity
+        order = serializer.save(user=account, cart=cart)
 
-            order = serializer.save(total_amount=total_amount)
+        # Deactivate the cart after order placement
+        cart.is_active = False
+        cart.save()
+        if user.email:
+            self.send_order_email(order)
 
-            if user_account:
-                email = user_account.user.email
-                if email:
-                    email_subject = "Thank You for Your Order"
-                    email_body = render_to_string('orderemail.html', {
-                        'flower_name': flower.flower_name,
-                        'quantity': quantity,
-                        'total_amount': total_amount,
-                        'email': email,
-                        'phone': user_account.phone
-                    })
-                    email_message = EmailMultiAlternatives(email_subject, '', to=[email])
-                    email_message.attach_alternative(email_body, "text/html")
-                    email_message.send()
-                else:
-                    print("No email found!")
-        else:
-            raise serializer.ValidationError("Insufficient stock for the selected flower.")
-    
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
+    def send_order_email(self, order, status='Order Confirmation'):
+        email_subject = status
+        email_body = render_to_string('orderemail.html', {
+            'user': order.user.user.username,
+            'order': order,
+        })
+        email = EmailMultiAlternatives(email_subject, '', to=[order.user.user.email])
+        print(email)
+        email.attach_alternative(email_body, "text/html")
+        email.send()
+
+    @action(detail=False, methods=['get'], url_path='count')
+    def order_count(self, request):
+        count = Order.objects.count()
+        return Response({'order_count': count}, status=status.HTTP_200_OK)
+
+    def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
-        status_before_update = instance.status
-
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
+        previous_status = instance.order_status
         self.perform_update(serializer)
 
-        if serializer.validated_data.get('status') == 'Completed' and status_before_update != 'Completed':
-            user_email = getattr(instance.user, 'email', None)
-            if user_email:
-                email_subject = "Order Completed"
-                email_body = render_to_string('order_completed_email.html', {
-                    'user': instance.user,
-                    'order': instance,
-                })
-                email_message = EmailMultiAlternatives(email_subject, '', to=[user_email])
-                email_message.attach_alternative(email_body, "text/html")
-                email_message.send()
+        if previous_status != 'Completed' and instance.order_status == 'Completed':
+            self.send_order_completed_email(instance)
         return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'], url_path='order_count')
-    def order_count(self, request):
-        total_orders = Order.objects.count()
-        return Response({'total_orders': total_orders})
 
-# class CartListCreateView(viewsets.ModelViewSet):
-#     queryset = Cart.objects.all()
-#     serializer_class = CartSerializer
+    def send_order_completed_email(self, order):
+        """
+        Send an email when the order status is updated to 'Completed'.
+        """
+        email_subject = "Order Completed"
+        email_body = render_to_string('order_completed_email.html', {
+            'user': order.user.username,
+            'order': order,
+        })
+        email = EmailMultiAlternatives(email_subject, '', to=[order.user.email])
+        email.attach_alternative(email_body, "text/html")
+        email.send()
 
-# class CartDetailView(viewsets.ModelViewSet):
-#     queryset = Cart.objects.all()
-#     serializer_class = CartSerializer
-# class CartViewSet(CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
-#     queryset = Cart.objects.all()
-#     serializer_class = CartSerializer
-    
-# class CartItemViewSet(viewsets.ModelViewSet):
-#     # queryset = CartItem.objects.all()
-#     serializer_class = CartItemSerializer
-#     http_method_names = ['get','post','patch','delete']
-#     def get_queryset(self):
-#         return CartItem.objects.filter(cart_id=self.kwargs['cart_pk'])
-    
-#     def get_serializer_class(self):
-#         if self.request.method == 'POST':
-#             return AddCartItemSerializer
-#         elif self.request.method == 'PATCH':
-#             return UpdateCartItemSerializer
-#         return CartItemSerializer
-    
-#     def get_serializer_context(self):
-#         return {"cart_id": self.kwargs["cart_pk"]}
-    

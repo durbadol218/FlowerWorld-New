@@ -2,6 +2,8 @@ from django.db import models
 from user.models import Account
 from flowers.models import Flower
 from decimal import Decimal
+from datetime import datetime
+import uuid
 
 class Cart(models.Model):
     user = models.ForeignKey(Account, on_delete=models.CASCADE)
@@ -11,15 +13,9 @@ class Cart(models.Model):
     grand_total = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     #discount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     
-    # def __str__(self):
-    #     return f"Cart for {self.user.user.username}"
     def __str__(self):
         return f"Cart ({self.id}) for {self.user.user.username} - {self.items.count()} items, Total: ${self.grand_total}, (Active: {self.is_active})"
-
-    # def calculate_grand_total(self):
-    #     total = sum(item.get_total() for item in self.items.all())
-    #     self.grand_total = total
-    #     self.save(update_fields=["grand_total"])
+    
     def calculate_grand_total(self, delta=None):
         self.grand_total = Decimal(self.grand_total)
         if delta is not None:
@@ -28,13 +24,9 @@ class Cart(models.Model):
             total = sum(Decimal(item.get_total()) for item in self.items.all())
             self.grand_total = total
         self.save(update_fields=["grand_total"])
-    
-    def clear_cart(self):
-        self.items.all().delete()
-        self.calculate_grand_total()
         
 class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE)
+    cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE,null=True)
     flower = models.ForeignKey(Flower, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
     cart_image = models.ImageField(upload_to='cart_images/', null=True, blank=True)
@@ -72,7 +64,6 @@ class CartItem(models.Model):
     def __str__(self):
         return f"{self.quantity}x {self.flower.flower_name} (${self.subtotal}) in Cart ({self.cart.id})"
 
-    
 class Order(models.Model):
     ORDER_STATUS = [
         ('Pending', 'Pending'),
@@ -80,35 +71,108 @@ class Order(models.Model):
         ('Cancelled', 'Cancelled'),
         ('Failed', 'Failed'),
     ]
-    user = models.ForeignKey(Account,on_delete=models.CASCADE,blank=True,null=True)
+    
+    PAYMENT_STATUS = [
+        ('Pending', 'Pending'),
+        ('Paid', 'Paid'),
+        ('Failed', 'Failed'),
+        ('Refunded', 'Refunded'),
+    ]
+
+    user = models.ForeignKey(Account, on_delete=models.CASCADE, blank=True, null=True)
     placed_time = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=50, choices=ORDER_STATUS, default="Pending")
-    total_amount = models.FloatField(verbose_name='Total amount of order', default=0)
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, blank=True, null=True)
-    
+    payment_status = models.CharField(max_length=50, choices=PAYMENT_STATUS, default="Pending")
+    shipping_address = models.TextField(default="Not Provided")
+    transaction_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
+    total_amount = models.DecimalField(
+        max_digits=10, verbose_name='Total amount of order', decimal_places=2, default=0
+    )
+    cart = models.ForeignKey('Cart', on_delete=models.CASCADE, blank=True, null=True)
+
     class Meta:
         verbose_name = 'Order'
         verbose_name_plural = 'Orders'
         ordering = ['-placed_time']
-    
+
     def calculate_total_amount(self):
-        if self.cart and self.cart.items.exists():
-            self.total_amount = sum(item.get_total() for item in self.cart.items.all())
-        elif self.order_items_relation.exists():
-            self.total_amount = sum(item.get_total() for item in self.order_items_relation.all())
-        else:
-            self.total_amount = 0
-        self.save()
+        if not self.items.exists():  # Avoid unnecessary calculations
+            return
+        self.total_amount = sum(item.get_total() for item in self.items.all())
+        self.save(update_fields=["total_amount"])
+
+    def transfer_cart_to_order_items(self):
+        """
+        Transfer cart items to order items and clear the cart.
+        """
+        if not self.cart:
+            return  # No cart to transfer items from
+
+        for cart_item in self.cart.items.all():
+            # Create order items from cart items
+            OrderItem.objects.create(
+                order=self,
+                flower=cart_item.flower,
+                quantity=cart_item.quantity,
+                price_at_order_time=cart_item.flower.price
+            )
+
+    def save(self, *args, **kwargs):
+        """
+        Override the save method to generate a custom transaction ID, ensure total amount is calculated,
+        and deactivate the related cart after the order is placed.
+        """
+        is_new = self.pk is None  # Check if the order is new
+        
+        if is_new and not self.transaction_id:
+            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')  # e.g., 20241215080000
+            unique_part = uuid.uuid4().hex[:6].upper()  # Shortened UUID for uniqueness
+            self.transaction_id = f"TXN-{timestamp}-{unique_part}"
+
+        super().save(*args, **kwargs)
+
+        # Transfer cart items to order items only if the order is new and cart exists
+        if is_new and self.cart:
+            self.transfer_cart_to_order_items()
+
+            # Mark the cart as inactive it after the order is placed
+            self.cart.is_active = False  # Deactivate the cart
+            self.cart.save()
+
+        if self.items.exists():
+            self.total_amount = sum(item.get_total() for item in self.items.all())
+            super().save(update_fields=["total_amount"])
+
+    
+    def __str__(self):
+        return f"Order {self.id} for {self.user.user.username} - Status: {self.status}, Total: ${self.total_amount}"
 
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order,related_name = 'order_items_relation', on_delete=models.CASCADE)
-    # order = models.ForeignKey(Order,related_name = 'items', on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, related_name='items', on_delete=models.CASCADE)
     flower = models.ForeignKey(Flower, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
-    
+    price_at_order_time = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+
     def get_total(self):
-        return self.quantity * self.flower.price
-    
+        """
+        Return the total for this order item.
+        """
+        return self.quantity * self.price_at_order_time
+
+    def save(self, *args, **kwargs):
+        """
+        Ensure the price_at_order_time is set to the flower price and recalculate subtotal.
+        """
+        if not self.price_at_order_time:
+            self.price_at_order_time = self.flower.price
+
+        self.subtotal = self.get_total()
+        super().save(*args, **kwargs)
+
+        # Update the total amount for the order after saving the order item
+        self.order.calculate_total_amount()
+
     def __str__(self):
-        return f"{self.flower.flower_name} in Order {self.order.id}"
+        return f"{self.quantity}x {self.flower.flower_name} (${self.subtotal}) in Order ({self.order.id})"
