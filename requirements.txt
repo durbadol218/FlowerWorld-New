@@ -1,4 +1,3 @@
-anyio
 asgiref
 asttokens
 async-lru
@@ -63,8 +62,6 @@ pyparsing
 python-dateutil
 python-json-logger
 pytz
-pywinpty
-PyYAML
 pyzmq
 referencing
 requests
