@@ -373,7 +373,7 @@ EMAIL_HOST_PASSWORD = env("EMAIL_PASSWORD")
 
 # SSLCOMMERZ Configuration
 SSLCOMMERZ = {
-    'STORE_ID': env("STORE_ID"),
+    'STORE_ID': env("STORID"),
     'STORE_PASSWORD': env("STORE_PASS"),
     'IS_SANDBOX': True,  # Set False for production
     'SUCCESS_URL': 'https://flowerworld-modified.onrender.com/api/payment/success/',
