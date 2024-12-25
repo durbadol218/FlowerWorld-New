@@ -103,13 +103,12 @@ class Order(models.Model):
 
     def transfer_cart_to_order_items(self):
         """
-        Transfer cart items to order items and clear the cart.
+        Transfer cart items to order items.
         """
         if not self.cart:
-            return  # No cart to transfer items from
+            return
 
         for cart_item in self.cart.items.all():
-            # Create order items from cart items
             OrderItem.objects.create(
                 order=self,
                 flower=cart_item.flower,
@@ -122,20 +121,17 @@ class Order(models.Model):
         Override the save method to generate a custom transaction ID, ensure total amount is calculated,
         and deactivate the related cart after the order is placed.
         """
-        is_new = self.pk is None  # Check if the order is new
+        is_new = self.pk is None
         
         if is_new and not self.transaction_id:
-            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')  # e.g., 20241215080000
-            unique_part = uuid.uuid4().hex[:6].upper()  # Shortened UUID for uniqueness
+            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            unique_part = uuid.uuid4().hex[:6].upper()
             self.transaction_id = f"TXN-{timestamp}-{unique_part}"
 
         super().save(*args, **kwargs)
-
-        # Transfer cart items to order items only if the order is new and cart exists
         if is_new and self.cart:
             self.transfer_cart_to_order_items()
 
-            # Mark the cart as inactive it after the order is placed
             self.cart.is_active = False  # Deactivate the cart
             self.cart.save()
 
@@ -156,22 +152,15 @@ class OrderItem(models.Model):
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
 
     def get_total(self):
-        """
-        Return the total for this order item.
-        """
         return self.quantity * self.price_at_order_time
 
     def save(self, *args, **kwargs):
-        """
-        Ensure the price_at_order_time is set to the flower price and recalculate subtotal.
-        """
         if not self.price_at_order_time:
             self.price_at_order_time = self.flower.price
 
         self.subtotal = self.get_total()
         super().save(*args, **kwargs)
 
-        # Update the total amount for the order after saving the order item
         self.order.calculate_total_amount()
 
     def __str__(self):

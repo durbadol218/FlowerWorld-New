@@ -140,7 +140,11 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class CreateOrderSerializer(serializers.ModelSerializer):
     cart_id = serializers.IntegerField(write_only=True)
     items = OrderItemSerializer(source='order_items_relation', many=True, read_only=True)
-    shipping_address = serializers.CharField(max_length=255, required=True)  # Add this line
+    shipping_address = serializers.CharField(
+        max_length=255,
+        required=False,
+        default="Not Provided"
+    )
     payment_status = serializers.CharField(read_only=True)  # Add this line
     class Meta:
         model = Order
@@ -156,67 +160,11 @@ class CreateOrderSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Cannot place an order with an empty cart.")
         
         return value
-
-    # def create(self, validated_data):
-    #     # user = self.context['request'].user
-    #     user = validated_data.pop('user')
-    #     cart_id = validated_data.pop('cart_id')
-    #     shipping_address = validated_data.pop('shipping_address')
-        
-    #     # Retrieve the cart and its items
-    #     cart = Cart.objects.get(id=cart_id)
-    #     if not cart.is_active:
-    #         raise serializers.ValidationError("This cart is inactive and cannot be used to place an order.")
-        
-    #     if not cart.items.exists():
-    #         raise serializers.ValidationError("Cannot place an order with an empty cart.")
     
-    #     cart_items = cart.items.all()
-
-    #     # Create the order
-    #     order = Order.objects.create(user=user, cart=cart)
-        
-    #     # Transfer CartItems to OrderItems
-    #     order_items = [
-    #         OrderItem(
-    #             order=order,
-    #             flower=item.flower,
-    #             quantity=item.quantity,
-    #             price_at_order_time=item.price_at_added  # Make sure price_at_added is valid
-    #         )
-    #         for item in cart_items
-    #     ]
-    #     OrderItem.objects.bulk_create(order_items)
-    #     # Transfer CartItems to OrderItems but do not remove items from the cart
-        
-    #     # # Create OrderItems without modifying the CartItems in the Cart
-    #     # order_items = []
-    #     # for item in cart_items:
-    #     #     # Link CartItem data to OrderItem, without modifying CartItems
-    #     #     order_item = OrderItem(
-    #     #         order=order,
-    #     #         flower=item.flower,
-    #     #         quantity=item.quantity,
-    #     #         price_at_order_time=item.price_at_added  # Price at the time the item was added to the cart
-    #     #     )
-    #     #     order_items.append(order_item)
-
-    #     # # Bulk create OrderItems
-    #     # OrderItem.objects.bulk_create(order_items)
-
-    #     # Calculate and save the total order amount
-    #     order.calculate_total_amount()
-
-    #     # Mark cart as inactive and save it
-    #     cart.is_active = False
-    #     cart.save()
-
-    #     return order
-
     def create(self, validated_data):
         user = validated_data.pop('user')
         cart_id = validated_data.pop('cart_id')
-        shipping_address = validated_data.pop('shipping_address')
+        shipping_address = validated_data.pop('shipping_address', "Not Provided")
 
         print(f"Received Cart ID: {cart_id}")
 
@@ -227,20 +175,15 @@ class CreateOrderSerializer(serializers.ModelSerializer):
 
         print(f"Cart ID: {cart.id}, Cart Active: {cart.is_active}")  # This should print the cart status
 
-        # Check if the cart is active
         if not cart.is_active:
             raise serializers.ValidationError("This cart is inactive and cannot be used to place an order.")
-
-        # Check if the cart has any items
         if not cart.items.exists():
             raise serializers.ValidationError("Cannot place an order with an empty cart.")
 
         cart_items = cart.items.all()
 
-        # Create the order
         order = Order.objects.create(user=user, cart=cart, shipping_address=shipping_address)
 
-        # Transfer CartItems to OrderItems
         order_items = [
             OrderItem(
                 order=order,
@@ -259,8 +202,8 @@ class CreateOrderSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(source='order_items_relation', many=True, read_only=True)
-    username = serializers.ReadOnlyField(source='user.user.username')  # Renamed for consistency
-    shipping_address = serializers.CharField(read_only=True)  # Add this line
+    username = serializers.ReadOnlyField(source='user.user.username')
+    shipping_address = serializers.CharField(read_only=True)
     transaction_id = serializers.CharField(read_only=True)
     payment_status = serializers.CharField(read_only=True)
     class Meta:
@@ -269,8 +212,8 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class ListOrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True)  # Include the related order items
-    shipping_address = serializers.CharField(read_only=True)  # Add this line
+    items = OrderItemSerializer(many=True)
+    shipping_address = serializers.CharField(read_only=True)
     transaction_id = serializers.CharField(read_only=True) 
     payment_status = serializers.CharField(read_only=True)
     class Meta:
@@ -278,9 +221,6 @@ class ListOrderSerializer(serializers.ModelSerializer):
         fields = ('id', 'user', 'status','payment_status','transaction_id', 'total_amount', 'placed_time', 'items', 'shipping_address')  # 'status' field once
 
     def get_items(self, obj):
-        """
-        Return a summary of items in the order.
-        """
         return [
             {
                 'flower_name': item.flower.flower_name,
