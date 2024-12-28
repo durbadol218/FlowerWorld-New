@@ -5,6 +5,7 @@ from flowers.serializers import FlowerSerializer
 from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Sum, F, FloatField
+from collections import defaultdict
 
 class CartItemSerializer(serializers.ModelSerializer):
     flower_name = serializers.ReadOnlyField(source='flower.flower_name')
@@ -166,7 +167,6 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         user = validated_data.pop('user')
         cart_id = validated_data.pop('cart_id')
         shipping_address = validated_data.pop('shipping_address', "Not Provided")
-
         print(f"Received Cart ID: {cart_id}")
 
         try:
@@ -174,32 +174,45 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         except Cart.DoesNotExist:
             raise serializers.ValidationError(f"Cart with ID {cart_id} does not exist.")
 
-        print(f"Cart ID: {cart.id}, Cart Active: {cart.is_active}")  # This should print the cart status
-
+        print(f"Cart ID: {cart.id}, Cart Active: {cart.is_active}")
         if not cart.is_active:
             raise serializers.ValidationError("This cart is inactive and cannot be used to place an order.")
         if not cart.items.exists():
             raise serializers.ValidationError("Cannot place an order with an empty cart.")
 
-        cart_items = cart.items.all()
+        item_quantities = defaultdict(lambda: {'quantity': 0, 'price_at_added': None})
+        for item in cart.items.all():
+            flower_id = item.flower.id
+            item_quantities[flower_id]['quantity'] += item.quantity
+            item_quantities[flower_id]['price_at_added'] = item.flower.price
 
-        order = Order.objects.create(user=user, cart=cart, shipping_address=shipping_address)
+        flower_ids = item_quantities.keys()
+        flowers = Flower.objects.filter(id__in=flower_ids)
+        flower_map = {flower.id: flower for flower in flowers}
+
+        missing_flower_ids = set(flower_ids) - set(flower_map.keys())
+        if missing_flower_ids:
+            raise serializers.ValidationError(f"Missing flowers for IDs: {missing_flower_ids}")
+
+        order = Order.objects.create(user=user, shipping_address=shipping_address)
 
         order_items = [
             OrderItem(
                 order=order,
-                flower=item.flower,
-                quantity=item.quantity,
-                price_at_order_time=item.price_at_added
+                flower=flower_map[flower_id],
+                quantity=details['quantity'],
+                price_at_order_time=details['price_at_added']
             )
-            for item in cart_items
+            for flower_id, details in item_quantities.items()
         ]
         OrderItem.objects.bulk_create(order_items)
-        order.calculate_total_amount()
+        order.total_amount = sum(
+            item.quantity * item.price_at_order_time for item in order_items
+        )
+        order.save()
         cart.is_active = False
         cart.save()
         return order
-
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(source='order_items_relation', many=True, read_only=True)
