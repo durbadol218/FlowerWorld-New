@@ -4,6 +4,7 @@ from flowers.models import Flower
 from flowers.serializers import FlowerSerializer
 from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Sum, F, FloatField
 
 class CartItemSerializer(serializers.ModelSerializer):
     flower_name = serializers.ReadOnlyField(source='flower.flower_name')
@@ -145,7 +146,7 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         required=False,
         default="Not Provided"
     )
-    payment_status = serializers.CharField(read_only=True)  # Add this line
+    payment_status = serializers.CharField(read_only=True)
     class Meta:
         model = Order
         fields = ['id', 'user', 'cart_id', 'placed_time', 'status', 'payment_status', 'shipping_address','items']
@@ -189,7 +190,7 @@ class CreateOrderSerializer(serializers.ModelSerializer):
                 order=order,
                 flower=item.flower,
                 quantity=item.quantity,
-                price_at_order_time=item.price_at_added  # Ensure price_at_added is valid
+                price_at_order_time=item.price_at_added
             )
             for item in cart_items
         ]
@@ -220,15 +221,34 @@ class ListOrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = ('id', 'user', 'status','payment_status','transaction_id', 'total_amount', 'placed_time', 'items', 'shipping_address')  # 'status' field once
 
+    # def get_items(self, obj):
+    #     return [
+    #         {
+    #             'flower_name': item.flower.flower_name,
+    #             'quantity': item.quantity,
+    #             'sub_total': item.get_total()
+    #         }
+    #         for item in obj.order_items_relation.all()
+    #     ]
     def get_items(self, obj):
-        return [
-            {
-                'flower_name': item.flower.flower_name,
-                'quantity': item.quantity,
-                'sub_total': item.get_total()
-            }
-            for item in obj.order_items_relation.all()
-        ]
+        grouped_items = {}
+        
+        for item in obj.order_items_relation.all():
+            flower_id = item.flower.id
+            if flower_id not in grouped_items:
+                grouped_items[flower_id] = {
+                    'id': item.id,
+                    'flower_id': flower_id,
+                    'flower_name': item.flower.flower_name,
+                    'flower_price': item.price_at_order_time,
+                    'quantity': item.quantity,
+                    'sub_total': item.get_total(),
+                }
+            else:
+                grouped_items[flower_id]['quantity'] += item.quantity
+                grouped_items[flower_id]['sub_total'] += item.get_total()
+        return list(grouped_items.values())
+
 
 class UpdateOrderStatusSerializer(serializers.ModelSerializer):
     status = serializers.ChoiceField(choices=Order.ORDER_STATUS)
