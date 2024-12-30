@@ -127,10 +127,23 @@ class UpdateCartItemSerializer(serializers.ModelSerializer):
         
         return cart_item
 
+# class OrderItemSerializer(serializers.ModelSerializer):
+#     sub_total = serializers.SerializerMethodField()
+#     flower_name = serializers.ReadOnlyField(source='flower.flower_name')
+#     flower_price = serializers.ReadOnlyField(source='flower.price')
+
+#     class Meta:
+#         model = OrderItem
+#         fields = ['id', 'flower_id', 'flower_name', 'quantity', 'flower_price', 'sub_total']
+
+#     def get_sub_total(self, obj):
+#         return obj.get_total()
+
 class OrderItemSerializer(serializers.ModelSerializer):
     sub_total = serializers.SerializerMethodField()
     flower_name = serializers.ReadOnlyField(source='flower.flower_name')
     flower_price = serializers.ReadOnlyField(source='flower.price')
+    flower_id = serializers.ReadOnlyField(source='flower.id')  # Add flower_id field
 
     class Meta:
         model = OrderItem
@@ -214,53 +227,82 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         cart.save()
         return order
 
+# class OrderSerializer(serializers.ModelSerializer):
+#     items = OrderItemSerializer(source='order_items_relation', many=True, read_only=True)
+#     username = serializers.ReadOnlyField(source='user.user.username')
+#     shipping_address = serializers.CharField(read_only=True)
+#     transaction_id = serializers.CharField(read_only=True)
+#     payment_status = serializers.CharField(read_only=True)
+#     class Meta:
+#         model = Order
+#         fields = ['id', 'user', 'username', 'placed_time', 'status', 'payment_status','transaction_id', 'total_amount', 'items','shipping_address']
+
 class OrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(source='order_items_relation', many=True, read_only=True)
-    username = serializers.ReadOnlyField(source='user.user.username')
+    items = OrderItemSerializer(many=True, read_only=True)
+    username = serializers.ReadOnlyField(source='user.username')  # Fix to match your User model
     shipping_address = serializers.CharField(read_only=True)
     transaction_id = serializers.CharField(read_only=True)
     payment_status = serializers.CharField(read_only=True)
+
     class Meta:
         model = Order
-        fields = ['id', 'user', 'username', 'placed_time', 'status', 'payment_status','transaction_id', 'total_amount', 'items','shipping_address']
+        fields = [
+            'id', 'user', 'username', 'placed_time', 'status',
+            'payment_status', 'transaction_id', 'total_amount',
+            'items', 'shipping_address'
+        ]
 
+
+# class ListOrderSerializer(serializers.ModelSerializer):
+#     items = OrderItemSerializer(many=True)
+#     shipping_address = serializers.CharField(read_only=True)
+#     transaction_id = serializers.CharField(read_only=True) 
+#     payment_status = serializers.CharField(read_only=True)
+#     class Meta:
+#         model = Order
+#         fields = ('id', 'user', 'status','payment_status','transaction_id', 'total_amount', 'placed_time', 'items', 'shipping_address')  # 'status' field once
+
+#     # def get_items(self, obj):
+#     #     return [
+#     #         {
+#     #             'flower_name': item.flower.flower_name,
+#     #             'quantity': item.quantity,
+#     #             'sub_total': item.get_total()
+#     #         }
+#     #         for item in obj.order_items_relation.all()
+#     #     ]
+#     def get_items(self, obj):
+#         grouped_items = {}
+        
+#         for item in obj.order_items_relation.all():
+#             flower_id = item.flower.id
+#             if flower_id not in grouped_items:
+#                 grouped_items[flower_id] = {
+#                     'id': item.id,
+#                     'flower_id': flower_id,
+#                     'flower_name': item.flower.flower_name,
+#                     'flower_price': item.price_at_order_time,
+#                     'quantity': item.quantity,
+#                     'sub_total': item.get_total(),
+#                 }
+#             else:
+#                 grouped_items[flower_id]['quantity'] += item.quantity
+#                 grouped_items[flower_id]['sub_total'] += item.get_total()
+#         return list(grouped_items.values())
 
 class ListOrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True)
+    items = OrderItemSerializer(source='items', many=True, read_only=True)  # Use correct related_name
     shipping_address = serializers.CharField(read_only=True)
-    transaction_id = serializers.CharField(read_only=True) 
+    transaction_id = serializers.CharField(read_only=True)
     payment_status = serializers.CharField(read_only=True)
+
     class Meta:
         model = Order
-        fields = ('id', 'user', 'status','payment_status','transaction_id', 'total_amount', 'placed_time', 'items', 'shipping_address')  # 'status' field once
-
-    # def get_items(self, obj):
-    #     return [
-    #         {
-    #             'flower_name': item.flower.flower_name,
-    #             'quantity': item.quantity,
-    #             'sub_total': item.get_total()
-    #         }
-    #         for item in obj.order_items_relation.all()
-    #     ]
-    def get_items(self, obj):
-        grouped_items = {}
-        
-        for item in obj.order_items_relation.all():
-            flower_id = item.flower.id
-            if flower_id not in grouped_items:
-                grouped_items[flower_id] = {
-                    'id': item.id,
-                    'flower_id': flower_id,
-                    'flower_name': item.flower.flower_name,
-                    'flower_price': item.price_at_order_time,
-                    'quantity': item.quantity,
-                    'sub_total': item.get_total(),
-                }
-            else:
-                grouped_items[flower_id]['quantity'] += item.quantity
-                grouped_items[flower_id]['sub_total'] += item.get_total()
-        return list(grouped_items.values())
+        fields = [
+            'id', 'user', 'status', 'payment_status',
+            'transaction_id', 'total_amount', 'placed_time',
+            'items', 'shipping_address'
+        ]
 
 
 class UpdateOrderStatusSerializer(serializers.ModelSerializer):
