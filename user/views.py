@@ -21,6 +21,9 @@ from django.template.loader import render_to_string
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.authtoken.models import Token
 
+# from django.views.decorators.csrf import csrf_exempt
+# from django.utils.decorators import method_decorator
+
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = models.User.objects.all()
@@ -72,8 +75,6 @@ def activateAccount(request, uid64, token):
     else:
         return redirect('register')
 
-# from django.views.decorators.csrf import csrf_exempt
-# from django.utils.decorators import method_decorator
 
 # @method_decorator(csrf_exempt, name='dispatch')
 class UserLoginApiView(APIView):
@@ -125,21 +126,7 @@ class ChangePasswordView(APIView):
             return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
-# class UserProfileUpdate(APIView):
-#     permission_classes = [IsAuthenticated]
-    
-#     def get(self, request, *args, **kwargs):
-#         user = request.user
-#         serializer = serializers.UserProfileUpdate(instance=user)
-#         return Response(serializer.data)
-#     def post(self, request, *args, **kwargs):
-#         user = request.user
-#         serializer = UserProfielUpdate(instance=user)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response({"message": "Profile updated successfully"}, status=status.HTTP_200_OK)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-                
+
 class UserLogoutApiView(APIView):
     def get(self, request):
         request.user.auth_token.delete()

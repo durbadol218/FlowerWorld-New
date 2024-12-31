@@ -96,15 +96,12 @@ class Order(models.Model):
         ordering = ['-placed_time']
 
     def calculate_total_amount(self):
-        if not self.items.exists():  # Avoid unnecessary calculations
+        if not self.items.exists():
             return
         self.total_amount = sum(item.get_total() for item in self.items.all())
         self.save(update_fields=["total_amount"])
 
     def transfer_cart_to_order_items(self):
-        """
-        Transfer cart items to order items.
-        """
         if not self.cart:
             return
 

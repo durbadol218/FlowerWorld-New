@@ -24,7 +24,6 @@ class CartItemSerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         return obj.flower.image.url if obj.flower.image else None  # Ensure the image URL is returned
 
-
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
     grand_total = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
@@ -127,18 +126,6 @@ class UpdateCartItemSerializer(serializers.ModelSerializer):
         
         return cart_item
 
-# class OrderItemSerializer(serializers.ModelSerializer):
-#     sub_total = serializers.SerializerMethodField()
-#     flower_name = serializers.ReadOnlyField(source='flower.flower_name')
-#     flower_price = serializers.ReadOnlyField(source='flower.price')
-
-#     class Meta:
-#         model = OrderItem
-#         fields = ['id', 'flower_id', 'flower_name', 'quantity', 'flower_price', 'sub_total']
-
-#     def get_sub_total(self, obj):
-#         return obj.get_total()
-
 class OrderItemSerializer(serializers.ModelSerializer):
     sub_total = serializers.SerializerMethodField()
     flower_name = serializers.ReadOnlyField(source='flower.flower_name')
@@ -170,10 +157,8 @@ class CreateOrderSerializer(serializers.ModelSerializer):
             cart = Cart.objects.get(id=value, is_active=True)
         except Cart.DoesNotExist:
             raise serializers.ValidationError("Cart does not exist or is inactive.")
-        
         if not cart.items.exists():
             raise serializers.ValidationError("Cannot place an order with an empty cart.")
-        
         return value
     
     def create(self, validated_data):
@@ -181,7 +166,6 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         cart_id = validated_data.pop('cart_id')
         shipping_address = validated_data.pop('shipping_address', "Not Provided")
         print(f"Received Cart ID: {cart_id}")
-
         try:
             cart = Cart.objects.get(id=cart_id)
         except Cart.DoesNotExist:
@@ -206,9 +190,8 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         missing_flower_ids = set(flower_ids) - set(flower_map.keys())
         if missing_flower_ids:
             raise serializers.ValidationError(f"Missing flowers for IDs: {missing_flower_ids}")
-
+        
         order = Order.objects.create(user=user, shipping_address=shipping_address)
-
         order_items = [
             OrderItem(
                 order=order,
@@ -227,16 +210,6 @@ class CreateOrderSerializer(serializers.ModelSerializer):
         cart.save()
         return order
 
-# class OrderSerializer(serializers.ModelSerializer):
-#     items = OrderItemSerializer(source='order_items_relation', many=True, read_only=True)
-#     username = serializers.ReadOnlyField(source='user.user.username')
-#     shipping_address = serializers.CharField(read_only=True)
-#     transaction_id = serializers.CharField(read_only=True)
-#     payment_status = serializers.CharField(read_only=True)
-#     class Meta:
-#         model = Order
-#         fields = ['id', 'user', 'username', 'placed_time', 'status', 'payment_status','transaction_id', 'total_amount', 'items','shipping_address']
-
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     username = serializers.ReadOnlyField(source='user.username')  # Fix to match your User model
@@ -252,46 +225,8 @@ class OrderSerializer(serializers.ModelSerializer):
             'items', 'shipping_address'
         ]
 
-
-# class ListOrderSerializer(serializers.ModelSerializer):
-#     items = OrderItemSerializer(many=True)
-#     shipping_address = serializers.CharField(read_only=True)
-#     transaction_id = serializers.CharField(read_only=True) 
-#     payment_status = serializers.CharField(read_only=True)
-#     class Meta:
-#         model = Order
-#         fields = ('id', 'user', 'status','payment_status','transaction_id', 'total_amount', 'placed_time', 'items', 'shipping_address')  # 'status' field once
-
-#     # def get_items(self, obj):
-#     #     return [
-#     #         {
-#     #             'flower_name': item.flower.flower_name,
-#     #             'quantity': item.quantity,
-#     #             'sub_total': item.get_total()
-#     #         }
-#     #         for item in obj.order_items_relation.all()
-#     #     ]
-#     def get_items(self, obj):
-#         grouped_items = {}
-        
-#         for item in obj.order_items_relation.all():
-#             flower_id = item.flower.id
-#             if flower_id not in grouped_items:
-#                 grouped_items[flower_id] = {
-#                     'id': item.id,
-#                     'flower_id': flower_id,
-#                     'flower_name': item.flower.flower_name,
-#                     'flower_price': item.price_at_order_time,
-#                     'quantity': item.quantity,
-#                     'sub_total': item.get_total(),
-#                 }
-#             else:
-#                 grouped_items[flower_id]['quantity'] += item.quantity
-#                 grouped_items[flower_id]['sub_total'] += item.get_total()
-#         return list(grouped_items.values())
-
 class ListOrderSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(source='items', many=True, read_only=True)  # Use correct related_name
+    items = OrderItemSerializer(many=True, read_only=True)  # Use correct related_name
     shipping_address = serializers.CharField(read_only=True)
     transaction_id = serializers.CharField(read_only=True)
     payment_status = serializers.CharField(read_only=True)
