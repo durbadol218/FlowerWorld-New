@@ -79,6 +79,8 @@ class CartItemViewSet(viewsets.ModelViewSet):
 
     def get_serializer_context(self):
         return {"cart_id": self.kwargs["cart_pk"]}
+import logging
+logger = logging.getLogger(__name__)
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
@@ -88,10 +90,14 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.is_superuser:
+        print(f"User: {user.username}, Account Type: {user.account.user_type if hasattr(user, 'account') else 'No Account'}")
+
+        if hasattr(user, 'account') and user.account.user_type == "Admin":
             return Order.objects.select_related('user').prefetch_related('items')
+
         account = self.get_account()
         return Order.objects.filter(user=account).select_related('user').prefetch_related('items')
+
 
     def get_account(self):
         account = getattr(self.request.user, 'account', None)
