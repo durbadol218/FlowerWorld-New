@@ -85,7 +85,7 @@ def update_order_status(order, status, val_id=None):
     order.save()
 
 
-# Configure logger
+
 logger = logging.getLogger(__name__)
 
 @csrf_exempt
@@ -93,28 +93,22 @@ logger = logging.getLogger(__name__)
 def payment_success(request):
     tran_id = request.data.get('tran_id')
     val_id = request.data.get('val_id')
-
     logger.info(f"Received payment success data: {request.data}")
-
     if not tran_id or not val_id:
         logger.error("Missing transaction ID or validation ID in the request.")
         return Response({'error': 'Missing transaction or validation ID'}, status=status.HTTP_400_BAD_REQUEST)
-
     try:
         order = Order.objects.get(transaction_id=tran_id)
     except Order.DoesNotExist:
         logger.error(f"Order with transaction ID {tran_id} not found.")
         return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
-
     sslcz = SSLCOMMERZ({
         'store_id': settings.SSLCOMMERZ['STORE_ID'],
         'store_pass': settings.SSLCOMMERZ['STORE_PASSWORD'],
         'issandbox': settings.SSLCOMMERZ['IS_SANDBOX']
     })
-
     response = sslcz.validationTransactionOrder(val_id)
     logger.info(f"Validation response from SSLCOMMERZ: {response}")
-
     if response.get('status') == 'VALID':
         order.payment_status = 'Paid'
         order.save()
@@ -129,17 +123,15 @@ def payment_success(request):
 def payment_fail(request):
     data = request.GET if request.method == 'GET' else request.POST
 
-    transaction_id = data.get('tran_id')  # Transaction ID from SSLCommerz
-    status = data.get('status')          # Payment status ('FAILED')
+    transaction_id = data.get('tran_id')
+    status = data.get('status')
 
     if status == 'FAILED':
         try:
-            # Find the order and update its status
             order = Order.objects.get(transaction_id=transaction_id)
-            order.payment_status = 'Failed'  # Update payment status
-            order.order_status = 'Cancelled'  # Update order status (if applicable)
+            order.payment_status = 'Failed'
+            order.order_status = 'Cancelled'
             order.save()
-
             return JsonResponse({'message': 'Order payment failed and status updated successfully.'})
         except Order.DoesNotExist:
             return JsonResponse({'error': 'Order not found for this transaction ID.'}, status=404)
@@ -162,9 +154,6 @@ def payment_cancel(request):
 @csrf_exempt
 @api_view(['POST'])
 def payment_ipn(request):
-    """
-    Handles Instant Payment Notifications (IPN) from SSLCOMMERZ.
-    """
     data = request.data
     tran_id = data.get('tran_id')
     val_id = data.get('val_id')
@@ -175,7 +164,7 @@ def payment_ipn(request):
         return Response({'error': 'Missing required IPN data'}, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        order_id = tran_id.split("_")[1]  # Extract order ID from transaction ID
+        order_id = tran_id.split("_")[1]
         order = Order.objects.get(id=order_id)
 
         if status == 'VALID':

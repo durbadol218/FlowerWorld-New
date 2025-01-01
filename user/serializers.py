@@ -2,6 +2,9 @@ from rest_framework import serializers
 from . import models
 from django.contrib.auth.models import User
 from .constants import USER_TYPE
+from rest_framework import serializers
+from .models import Account
+
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -51,11 +54,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         account = models.Account.objects.create(user=user, user_type=user_type)
         account.save()
         return user
-from rest_framework import serializers
-from django.contrib.auth.models import User
-from .models import Account
-from .constants import USER_TYPE
-
 
 class UserProfileUpdate(serializers.ModelSerializer):
     phone = serializers.CharField(source='account.phone', required=True)
@@ -75,7 +73,6 @@ class UserProfileUpdate(serializers.ModelSerializer):
         instance.last_name = validated_data.get('last_name', instance.last_name)
         instance.email = validated_data.get('email', instance.email)
         
-        # Handle password change
         new_password = validated_data.get('new_password')
         confirm_password = validated_data.get('confirm_password')
         if new_password and new_password == confirm_password:

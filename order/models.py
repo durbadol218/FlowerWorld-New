@@ -128,15 +128,13 @@ class Order(models.Model):
         super().save(*args, **kwargs)
         if is_new and self.cart:
             self.transfer_cart_to_order_items()
-
-            self.cart.is_active = False  # Deactivate the cart
+            self.cart.is_active = False
             self.cart.save()
 
         if self.items.exists():
             self.total_amount = sum(item.get_total() for item in self.items.all())
             super().save(update_fields=["total_amount"])
 
-    
     def __str__(self):
         return f"Order {self.id} for {self.user.user.username} - Status: {self.status}, Total: ${self.total_amount}"
 
@@ -157,7 +155,6 @@ class OrderItem(models.Model):
 
         self.subtotal = self.get_total()
         super().save(*args, **kwargs)
-
         self.order.calculate_total_amount()
 
     def __str__(self):

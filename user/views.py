@@ -1,23 +1,17 @@
 from django.shortcuts import render, redirect
 from rest_framework import viewsets,status
-# Create your views here.
 from . import models
 from . import serializers
-
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
-
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 
-# for email
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
-
-# for login
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.authtoken.models import Token
 
@@ -111,16 +105,13 @@ class UserProfileUpdateView(APIView):
         if serializer.is_valid():
             serializer.save()
             return Response({"message": "Profile updated successfully"}, status=status.HTTP_200_OK)
-        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
-    
     def post(self, request, *args, **kwargs):
         user = request.user
         serializer = ChangePasswordSerializer(data=request.data)
-        
         if serializer.is_valid():
             serializer.update(user, serializer.validated_data)
             return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
