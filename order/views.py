@@ -213,7 +213,6 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         if instance.status != previous_status:
             self.handle_status_change(instance, previous_status)
-
         return Response(serializer.data)
 
     def handle_status_change(self, instance, previous_status):
@@ -222,7 +221,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 "Order Completed",
                 'order_completed_email.html',
                 {'user': instance.user.user.username, 'order': instance},
-                [instance.user.email]
+                [instance.user.user.email]
             )
 
     @action(detail=False, methods=['get'], url_path='count')
