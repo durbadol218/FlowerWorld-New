@@ -212,7 +212,7 @@ class CreateOrderSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
-    username = serializers.ReadOnlyField(source='user.username')  # Fix to match your User model
+    username = serializers.ReadOnlyField(source='user.user.username')
     shipping_address = serializers.CharField(read_only=True)
     transaction_id = serializers.CharField(read_only=True)
     payment_status = serializers.CharField(read_only=True)
@@ -220,13 +220,14 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            'id', 'user', 'username', 'placed_time', 'status',
+            'id', 'user_account_id', 'username', 'placed_time', 'status',
             'payment_status', 'transaction_id', 'total_amount',
             'items', 'shipping_address'
         ]
 
 class ListOrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)  # Use correct related_name
+    username = serializers.ReadOnlyField(source='user.user.username')
     shipping_address = serializers.CharField(read_only=True)
     transaction_id = serializers.CharField(read_only=True)
     payment_status = serializers.CharField(read_only=True)
@@ -234,7 +235,7 @@ class ListOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = [
-            'id', 'user', 'status', 'payment_status',
+            'id', 'user','username', 'status', 'payment_status',
             'transaction_id', 'total_amount', 'placed_time',
             'items', 'shipping_address'
         ]
