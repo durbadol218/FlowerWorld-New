@@ -5,7 +5,7 @@ from .constants import USER_TYPE
 
 class Account(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='account')
-    image = models.ImageField(upload_to='user/images/')
+    image = models.ImageField(upload_to='user_images')
     phone = models.CharField(max_length=15)
     user_type = models.CharField(max_length=20, choices=USER_TYPE)
     

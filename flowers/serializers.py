@@ -25,6 +25,7 @@ class FlowerSerializer(serializers.ModelSerializer):
         if value and not FlowerCategory.objects.filter(id=value.id).exists():
             raise serializers.ValidationError("Category does not exist.")
         return value
+
 # class ReviewSerializer(serializers.ModelSerializer):
 #     class Meta:
 #         model = ReviewModel
