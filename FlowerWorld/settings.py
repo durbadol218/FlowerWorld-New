@@ -111,11 +111,6 @@ WSGI_APPLICATION = 'FlowerWorld.wsgi.app'
 #     }
 # }
 
-# CLOUDINARY_STORAGE = {
-#     "CLOUD_NAME": env("CLOUD_NAME"),
-#     "API_KEY": env("CLOUDINARY_API_KEY"),
-#     "API_SECRET": env("APISEC"),
-# }
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': 'dcvesvnos',
     'API_KEY': '255566932722351',

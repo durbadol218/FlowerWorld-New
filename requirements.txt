@@ -1,7 +1,9 @@
 asgiref
 certifi
 charset-normalizer
+cloudinary
 Django
+django-cloudinary-storage
 django-cors-headers
 django-environ
 django-filter
@@ -12,6 +14,7 @@ Markdown
 pillow
 psycopg2-binary
 requests
+six
 sqlparse
 sslcommerz-lib
 tzdata
