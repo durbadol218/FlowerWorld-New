@@ -23,7 +23,6 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(required=True)
     phone = serializers.CharField(required=True)
     user_type = serializers.ChoiceField(choices=USER_TYPE, required=True)
-    # image = serializers.ImageField(required=False, allow_null=True)
     # image_url = serializers.URLField(required=False, allow_null=True)
     class Meta:
         model = User
