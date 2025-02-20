@@ -17,7 +17,7 @@ class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Account
         # fields = ['user', 'user_type', 'phone', 'image_url']
-        fields = ['user', 'user_type', 'phone', 'image_url']
+        fields = ['user', 'user_type', 'phone']
         
 class UserRegisterSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(required=True)
