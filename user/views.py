@@ -43,7 +43,7 @@ class UserRegistrationApiView(APIView):
             print("Token", token)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             print("uid",uid)
-            confirm_link = f"https://flowerworld.onrender.com/user/activate/{uid}/{token}"
+            confirm_link = f"https://flower-world.vercel.app/user/activate/{uid}/{token}"
             
             email_subject = "Confirmation Email for Activate Account"
             email_body = render_to_string('confirm_email.html', {'confirm_link':confirm_link})

@@ -14,9 +14,9 @@ class Flower(models.Model):
     flower_name = models.CharField(max_length=150)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    # image = CloudinaryField('image')
+    image_url = models.URLField(max_length=255, blank=True, null=True)
     # image = models.ImageField(upload_to='flowers/images/')
-    image = models.FileField(upload_to='flowers_image')
+    # image = models.FileField(upload_to='flowers_image')
     category = models.ForeignKey(FlowerCategory, related_name='flowers',on_delete=models.CASCADE,null=True)
     stock = models.IntegerField(default=0)
     

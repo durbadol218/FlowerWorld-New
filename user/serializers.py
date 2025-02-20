@@ -16,16 +16,18 @@ class AccountSerializer(serializers.ModelSerializer):
     user = UserSerializer()
     class Meta:
         model = models.Account
-        fields = ['user', 'user_type', 'phone', 'image']
+        # fields = ['user', 'user_type', 'phone', 'image_url']
+        fields = ['user', 'user_type', 'phone', 'image_url']
         
 class UserRegisterSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(required=True)
     phone = serializers.CharField(required=True)
     user_type = serializers.ChoiceField(choices=USER_TYPE, required=True)
-    image = serializers.ImageField(required=False, allow_null=True)
+    # image = serializers.ImageField(required=False, allow_null=True)
+    # image_url = serializers.URLField(required=False, allow_null=True)
     class Meta:
         model = User
-        fields = ['username', 'email', 'first_name', 'last_name', 'password', 'confirm_password', 'user_type', 'phone', 'image']
+        fields = ['username', 'email', 'first_name', 'last_name', 'password', 'confirm_password', 'user_type', 'phone']
 
 
     def save(self):
@@ -37,7 +39,11 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         password2 = self.validated_data['confirm_password']
         user_type = self.validated_data['user_type']
         phone = self.validated_data['phone']
-        image = self.validated_data.get('image')
+        # image_url = self.validated_data.get('image_url', '')
+        # image = self.validated_data.get('image')
+        
+        print("phone:", phone)
+        # print("image_url:", image_url)
         
         if password != password2:
             raise serializers.ValidationError({'error': "Password Doesn't Matched"})
@@ -51,20 +57,22 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         user.is_active = False
         user.save()
         
-        account = models.Account.objects.create(user=user, user_type=user_type)
+        # account = models.Account.objects.create(user=user, user_type=user_type)
+        account = models.Account.objects.create(user=user, user_type=user_type, phone=phone)
         account.save()
         return user
 
 class UserProfileUpdate(serializers.ModelSerializer):
     phone = serializers.CharField(source='account.phone', required=True)
     user_type = serializers.ChoiceField(source='account.user_type', choices=USER_TYPE, required=True)
-    image = serializers.ImageField(source='account.image', required=False)
+    image_url = serializers.URLField(source='account.image_url', required=False)
+    # image = serializers.ImageField(source='account.image', required=False)
     new_password = serializers.CharField(required=False, write_only=True)
     confirm_password = serializers.CharField(required=False, write_only=True)
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'phone', 'user_type', 'image', 'new_password', 'confirm_password']
+        fields = ['username', 'first_name', 'last_name', 'email', 'phone', 'user_type', 'image_url', 'new_password', 'confirm_password']
 
     def update(self, instance, validated_data):
         account_data = validated_data.pop('account', {})
@@ -83,10 +91,12 @@ class UserProfileUpdate(serializers.ModelSerializer):
         account = instance.account
         account.phone = account_data.get('phone', account.phone)
         account.user_type = account_data.get('user_type', account.user_type)
-        account.image = account_data.get('image', account.image)
+        # account.image = account_data.get('image', account.image)
+        account.image_url = account_data.get('image_url', account.image_url)
         account.save()
 
         return instance
+
 class ChangePassword(serializers.Serializer):
     new_password = serializers.CharField(required=True)
     confirm_password = serializers.CharField(required=True)

@@ -17,9 +17,10 @@ class SimpleProductSerializer(serializers.ModelSerializer):
 class FlowerSerializer(serializers.ModelSerializer):
     category = FlowerCategorySerializer(read_only=True) 
     category_id = serializers.PrimaryKeyRelatedField(queryset=FlowerCategory.objects.all(), required=False, allow_null=True)
+    # image_url = serializers.URLField(required=False, allow_blank=True)
     class Meta:
         model = Flower
-        fields = ['id', 'flower_name', 'description', 'price', 'image', 'category', 'category_id', 'stock']
+        fields = ['id', 'flower_name', 'description', 'price', 'image_url', 'category', 'category_id', 'stock']
         
     def validate_category(self, value):
         if value and not FlowerCategory.objects.filter(id=value.id).exists():
