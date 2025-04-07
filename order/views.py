@@ -17,6 +17,7 @@ from django.db import transaction
 from .serializers import OrderSerializer, CreateOrderSerializer, ListOrderSerializer, UpdateOrderStatusSerializer
 from .models import Order, Cart
 from rest_framework.exceptions import ValidationError
+import traceback
 
 # @method_decorator(csrf_exempt, name='dispatch')
 class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
@@ -64,6 +65,73 @@ class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyM
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+# class CartViewSet(ListModelMixin, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
+#     authentication_classes = [TokenAuthentication]
+#     permission_classes = [IsAuthenticated]
+#     serializer_class = CartSerializer
+#     queryset = Cart.objects.all()
+#     http_method_names = ['get', 'post', 'delete']
+
+#     def get_queryset(self):
+#         user = self.request.user
+
+#         # Ensure user has an account (UserAccount)
+#         try:
+#             account = user.account
+#         except AttributeError:
+#             print("No UserAccount associated with this user.")
+#             return Cart.objects.none()
+
+#         print(f"User: {user}, Account: {account}, User Type: {account.user_type}")
+        
+#         if account.user_type == "Admin":
+#             return Cart.objects.all()
+#         return Cart.objects.filter(user=account, is_active=True)
+
+#     def perform_create(self, serializer):
+#         try:
+#             account = self.request.user.account
+#         except AttributeError:
+#             raise ValidationError("Only registered customers can create carts.")
+
+#         if account.user_type == 'Admin':
+#             raise ValidationError("Admins are not allowed to create carts.")
+
+#         if Cart.objects.filter(user=account, is_active=True).exists():
+#             raise ValidationError("A cart already exists for this user.")
+
+#         cart = serializer.save(user=account)
+#         cart.calculate_grand_total()
+#         cart.save()
+
+
+#     def perform_update(self, serializer):
+#         cart = serializer.save()
+#         cart.calculate_grand_total()
+#         cart.save()
+
+#     def perform_destroy(self, instance):
+#         instance.items.all().delete()
+#         instance.delete()
+
+#     def list(self, request, *args, **kwargs):
+#         try:
+#             queryset = self.get_queryset()
+
+#             for cart in queryset:
+#                 cart.calculate_grand_total()
+#                 cart.save()
+
+#             serializer = self.get_serializer(queryset, many=True)
+#             return Response(serializer.data)
+#         except Exception as e:
+#             print("[CartViewSet] Error in list():", str(e))
+#             traceback.print_exc()
+#             return Response(
+#                 {"detail": "An error occurred while retrieving cart(s)."},
+#                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
+#             )
+            
 class CartItemViewSet(viewsets.ModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'delete']
 

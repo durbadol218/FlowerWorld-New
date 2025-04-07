@@ -22,7 +22,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         return obj.get_total()
     
     def get_image_url(self, obj):
-        return obj.flower.image.url if obj.flower.image else None  # Ensure the image URL is returned
+        return obj.flower.image_url if obj.flower.image_url else None  # Ensure the image URL is returned
 
 class CartSerializer(serializers.ModelSerializer):
     items = CartItemSerializer(many=True, read_only=True)
