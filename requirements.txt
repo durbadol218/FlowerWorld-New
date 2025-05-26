@@ -1,9 +1,7 @@
 asgiref
 certifi
 charset-normalizer
-cloudinary
 Django
-django-cloudinary-storage
 django-cors-headers
 django-environ
 django-filter
@@ -20,4 +18,3 @@ sslcommerz-lib
 tzdata
 urllib3
 whitenoise
-#github!
