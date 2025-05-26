@@ -13,10 +13,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import environ
 import os
-import cloudinary
-import cloudinary_storage
-# import cloudinary.uploader
-# import cloudinary.api
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -54,8 +50,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
-    "cloudinary",
-    "cloudinary_storage",
 ]
 
 MIDDLEWARE = [
@@ -111,22 +105,6 @@ WSGI_APPLICATION = 'FlowerWorld.wsgi.app'
 #     }
 # }
 
-<<<<<<< HEAD
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': 'dcvesvnos',
-    'API_KEY': '255566932722351',
-    'API_SECRET': '3DD1B2ub4FWg1z5oLCHbyviI1kY',
-}
-
-# print("Cloudinary Config:")
-# print("CLOUD_NAME:", env("CLOUD_NAME", default="NOT FOUND"))
-# print("API_KEY:", env("CLOUDINARY_API_KEY", default="NOT FOUND"))
-# print("API_SECRET:", env("APISEC", default="NOT FOUND"))
-
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-=======
->>>>>>> dab7d2b (Updated whole project for necessary changes)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
