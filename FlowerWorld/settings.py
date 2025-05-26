@@ -73,7 +73,7 @@ CORS_ALLOW_HEADERS = [
     'X-Requested-With',
 ]
 
-CSRF_TRUSTED_ORIGINS = ['https://flowerworld-modified.onrender.com', 'https://*.127.0.0.1']
+CSRF_TRUSTED_ORIGINS = ['https://flower-world-modified.vercel.app', 'https://*.127.0.0.1']
 
 ROOT_URLCONF = 'FlowerWorld.urls'
 
@@ -182,10 +182,10 @@ SSLCOMMERZ = {
     'STORE_ID': 'goswa675fa7e179b51',
     'STORE_PASSWORD': 'goswa675fa7e179b51@ssl',
     'IS_SANDBOX': True,
-    'SUCCESS_URL': 'https://flowerworld-modified.onrender.com/api/payment/success/',
-    'FAIL_URL': 'https://flowerworld-modified.onrender.com/api/payment/fail/',
-    'CANCEL_URL': 'https://flowerworld-modified.onrender.com/api/payment/cancel/',
-    'IPN_URL': 'https://flowerworld-modified.onrender.com/api/payment/ipn/',
+    'SUCCESS_URL': 'https://flower-world-modified.vercel.app/api/payment/success/',
+    'FAIL_URL': 'https://flower-world-modified.vercel.app/api/payment/fail/',
+    'CANCEL_URL': 'https://flower-world-modified.vercel.app/api/payment/cancel/',
+    'IPN_URL': 'https://flower-world-modified.vercel.app/api/payment/ipn/',
 }
 
 # REST Framework settings
