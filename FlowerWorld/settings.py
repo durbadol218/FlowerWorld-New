@@ -111,6 +111,7 @@ WSGI_APPLICATION = 'FlowerWorld.wsgi.app'
 #     }
 # }
 
+<<<<<<< HEAD
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': 'dcvesvnos',
     'API_KEY': '255566932722351',
@@ -124,6 +125,8 @@ CLOUDINARY_STORAGE = {
 
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
+=======
+>>>>>>> dab7d2b (Updated whole project for necessary changes)
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
