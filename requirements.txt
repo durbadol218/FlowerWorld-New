@@ -1,10 +1,7 @@
 asgiref
 certifi
 charset-normalizer
-<<<<<<< HEAD
 cloudinary
-=======
->>>>>>> dab7d2b (Updated whole project for necessary changes)
 Django
 django-cloudinary-storage
 django-cors-headers
@@ -17,10 +14,7 @@ Markdown
 pillow
 psycopg2-binary
 requests
-<<<<<<< HEAD
 six
-=======
->>>>>>> dab7d2b (Updated whole project for necessary changes)
 sqlparse
 sslcommerz-lib
 tzdata
