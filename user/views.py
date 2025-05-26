@@ -65,9 +65,9 @@ def activateAccount(request, uid64, token):
     if user is not None and default_token_generator.check_token(user, token):
         user.is_active = True
         user.save()
-        return redirect('login')
+        return redirect('https://flower-world-modified.vercel.app/login.html')
     else:
-        return redirect('register')
+        return redirect('https://flower-world-modified.vercel.app/register.html')
 
 
 # @method_decorator(csrf_exempt, name='dispatch')
@@ -100,7 +100,7 @@ class UserProfileUpdateView(APIView):
 
     def post(self, request, *args, **kwargs):
         user = request.user
-        serializer = UserProfileUpdate(instance=user, data=request.data)
+        serializer = serializers.UserProfileUpdate(instance=user, data=request.data)
         
         if serializer.is_valid():
             serializer.save()
@@ -111,7 +111,7 @@ class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, *args, **kwargs):
         user = request.user
-        serializer = ChangePasswordSerializer(data=request.data)
+        serializer = serializers.ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
             serializer.update(user, serializer.validated_data)
             return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)

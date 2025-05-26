@@ -5,6 +5,7 @@ from rest_framework import status
 from order.models import Order
 from user.models import Account
 # import sslcommerz_lib
+from django.shortcuts import redirect
 from sslcommerz_lib import SSLCOMMERZ
 from django.conf import settings
 import logging
@@ -113,10 +114,10 @@ def payment_success(request):
         order.payment_status = 'Paid'
         order.save()
         logger.info(f"Payment successful for order {order.id}.")
-        return Response({'message': 'Payment verified and order updated'}, status=status.HTTP_200_OK)
+        return redirect('https://flower-world-modified.vercel.app/payment_success.html')
     else:
         logger.error(f"Payment validation failed: {response}")
-        return Response({'error': 'Payment validation failed', 'details': response}, status=status.HTTP_400_BAD_REQUEST)
+        return redirect('https://flower-world-modified.vercel.app/payment_failed.html')
 
 @csrf_exempt
 @api_view(['POST'])
