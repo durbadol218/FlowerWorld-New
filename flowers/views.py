@@ -4,6 +4,7 @@ from .serializers import FlowerSerializer, FlowerCategorySerializer
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
+from django.utils.text import slugify
 
 class FlowerViewSet(viewsets.ModelViewSet):
     queryset = Flower.objects.all()
@@ -22,9 +23,20 @@ class FlowerViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+# class CategoryViewSet(viewsets.ModelViewSet):
+#     queryset = FlowerCategory.objects.all()
+#     serializer_class = FlowerCategorySerializer
+
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = FlowerCategory.objects.all()
     serializer_class = FlowerCategorySerializer
+
+    def perform_create(self, serializer):
+        name = serializer.validated_data.get('name')
+        slug = serializer.validated_data.get('slug', '')
+        if not slug:
+            serializer.validated_data['slug'] = slugify(name)
+        serializer.save()
 
 class CountFlowersAndCategoriesView(APIView):
     def get(self, request, *args, **kwargs):

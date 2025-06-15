@@ -1,10 +1,25 @@
 from rest_framework import serializers
 from .models import Flower, FlowerCategory
+from django.utils.text import slugify
+
+# class FlowerCategorySerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = FlowerCategory
+#         fields = ['id','name']
+
 
 class FlowerCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = FlowerCategory
-        fields = ['id','name']
+        fields = ['id', 'name', 'slug']
+        extra_kwargs = {
+            'slug': {'required': False}  # Make slug optional in API requests
+        }
+
+    def create(self, validated_data):
+        if not validated_data.get('slug'):
+            validated_data['slug'] = slugify(validated_data['name'])
+        return super().create(validated_data)
 
 
 class SimpleProductSerializer(serializers.ModelSerializer):
