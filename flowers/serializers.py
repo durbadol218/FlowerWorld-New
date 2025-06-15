@@ -16,7 +16,10 @@ class SimpleProductSerializer(serializers.ModelSerializer):
 
 class FlowerSerializer(serializers.ModelSerializer):
     category = FlowerCategorySerializer(read_only=True) 
-    category_id = serializers.PrimaryKeyRelatedField(queryset=FlowerCategory.objects.all(), required=False, allow_null=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        queryset=FlowerCategory.objects.all(),
+        source='category'
+    )
     # image_url = serializers.URLField(required=False, allow_blank=True)
     class Meta:
         model = Flower
