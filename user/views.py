@@ -31,29 +31,58 @@ class AccountViewset(viewsets.ModelViewSet):
 class UserRegistrationApiView(APIView):
     serializer_class = serializers.UserRegisterSerializer
     
+    # def post(self, request):
+    #     if request.user.is_authenticated:
+    #         return Response({"detail": "You are already logged in. Log out to create a new account."},status=status.HTTP_400_BAD_REQUEST)
+    #     serializer = self.serializer_class(data=request.data) 
+        
+    #     if serializer.is_valid(): 
+    #         user = serializer.save()
+    #         print(user)
+    #         token = default_token_generator.make_token(user)
+    #         print("Token", token)
+    #         uid = urlsafe_base64_encode(force_bytes(user.pk))
+    #         print("uid",uid)
+    #         confirm_link = f"https://flower-world.vercel.app/user/activate/{uid}/{token}"
+            
+    #         email_subject = "Confirmation Email for Activate Account"
+    #         email_body = render_to_string('confirm_email.html', {'confirm_link':confirm_link})
+    #         email = EmailMultiAlternatives(email_subject, '', to=[user.email])
+    #         email.attach_alternative(email_body, 'text/html')
+    #         email.send()
+            
+    #         return Response("Check Your Email For Confirmation")
+        
+    #     return Response(serializer.errors)
+    
     def post(self, request):
-        if request.user.is_authenticated:
-            return Response({"detail": "You are already logged in. Log out to create a new account."},status=status.HTTP_400_BAD_REQUEST)
-        serializer = self.serializer_class(data=request.data) 
-        
-        if serializer.is_valid(): 
-            user = serializer.save()
-            print(user)
-            token = default_token_generator.make_token(user)
-            print("Token", token)
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            print("uid",uid)
-            confirm_link = f"https://flower-world.vercel.app/user/activate/{uid}/{token}"
-            
-            email_subject = "Confirmation Email for Activate Account"
-            email_body = render_to_string('confirm_email.html', {'confirm_link':confirm_link})
-            email = EmailMultiAlternatives(email_subject, '', to=[user.email])
-            email.attach_alternative(email_body, 'text/html')
-            email.send()
-            
-            return Response("Check Your Email For Confirmation")
-        
-        return Response(serializer.errors)
+        try:
+            if request.user.is_authenticated:
+                return Response(
+                    {"detail": "You are already logged in. Log out to create a new account."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            serializer = self.serializer_class(data=request.data)
+
+            if serializer.is_valid():
+                user = serializer.save()
+                token = default_token_generator.make_token(user)
+                uid = urlsafe_base64_encode(force_bytes(user.pk))
+                confirm_link = f"https://flower-world.vercel.app/user/activate/{uid}/{token}"
+                print(confirm_link)
+                email_subject = "Confirmation Email for Activate Account"
+                email_body = render_to_string('confirm_email.html', {'confirm_link': confirm_link})
+                email = EmailMultiAlternatives(email_subject, '', to=[user.email])
+                email.attach_alternative(email_body, 'text/html')
+                email.send()
+
+                return Response({"message": "Check your email for confirmation."}, status=status.HTTP_201_CREATED)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            print("REGISTRATION EXCEPTION:", e)
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 def activateAccount(request, uid64, token):
     try:
