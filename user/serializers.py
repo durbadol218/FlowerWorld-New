@@ -53,7 +53,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         user = User(username=username, email=email,first_name=first_name,last_name=last_name)
         print(user)
         user.set_password(password)
-        user.is_active = True
+        user.is_active = False
         user.save()
         
         # account = models.Account.objects.create(user=user, user_type=user_type)
