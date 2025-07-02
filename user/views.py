@@ -14,7 +14,9 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.contrib.auth import authenticate, login, logout
 from rest_framework.authtoken.models import Token
-
+from .serializers import ContactMessageSerializer
+from django.core.mail import send_mail
+from django.conf import settings
 # from django.views.decorators.csrf import csrf_exempt
 # from django.utils.decorators import method_decorator
 
@@ -140,9 +142,10 @@ class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, *args, **kwargs):
         user = request.user
-        serializer = serializers.ChangePasswordSerializer(data=request.data)
+        serializer = serializers.ChangePassword(data=request.data)
         if serializer.is_valid():
-            serializer.update(user, serializer.validated_data)
+            serializer.update_password(user, serializer.validated_data)
+            user.save()
             return Response({"message": "Password changed successfully"}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
@@ -157,3 +160,28 @@ class TotalUsersCountView(APIView):
     def get(self, request, *args, **kwargs):
         total_users = User.objects.count()
         return Response({'total_users': total_users})
+    
+    
+class ContactMessageView(APIView):
+    def post(self, request):
+        serializer = ContactMessageSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+
+            full_name = serializer.validated_data['full_name']
+            email = serializer.validated_data['email']
+            message = serializer.validated_data['message']
+
+            subject = f"New Contact Message from {full_name}"
+            email_message = f"Name: {full_name}\nEmail: {email}\n\nMessage:\n{message}"
+
+            send_mail(
+                subject,
+                email_message,
+                settings.DEFAULT_FROM_EMAIL,
+                [settings.CONTACT_RECEIVER_EMAIL],
+                fail_silently=False,
+            )
+
+            return Response({"message": "Message sent successfully"}, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

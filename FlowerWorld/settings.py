@@ -175,7 +175,11 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = env("EMAIL")
 EMAIL_HOST_PASSWORD = env("EMAIL_PASSWORD")
-DEFAULT_FROM_EMAIL = 'FlowerWorld goswamidurbadol@gmail.com'
+# DEFAULT_FROM_EMAIL = 'FlowerWorld goswamidurbadol@gmail.com'
+
+
+DEFAULT_FROM_EMAIL = 'noreply@flowerworld.com'
+CONTACT_RECEIVER_EMAIL = 'support@flowerworld.com'
 
 # SSLCOMMERZ Configuration
 SSLCOMMERZ = {

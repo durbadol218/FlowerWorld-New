@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 from .constants import USER_TYPE
 from rest_framework import serializers
 from .models import Account
+from rest_framework import serializers
+from .models import ContactMessage
 
 
 
@@ -64,17 +66,17 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 class UserProfileUpdate(serializers.ModelSerializer):
     phone = serializers.CharField(source='account.phone', required=True)
     user_type = serializers.ChoiceField(source='account.user_type', choices=USER_TYPE, required=True)
-    image_url = serializers.URLField(source='account.image_url', required=False)
+    # image_url = serializers.URLField(source='account.image_url', required=False)
     # image = serializers.ImageField(source='account.image', required=False)
     new_password = serializers.CharField(required=False, write_only=True)
     confirm_password = serializers.CharField(required=False, write_only=True)
 
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'email', 'phone', 'user_type', 'image_url', 'new_password', 'confirm_password']
+        fields = ['username', 'first_name', 'last_name', 'email', 'phone', 'user_type', 'new_password', 'confirm_password']
 
     def update(self, instance, validated_data):
-        account_data = validated_data.pop('account', {})
+        # account_data = validated_data.pop('account', {})
         instance.username = validated_data.get('username', instance.username)
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
@@ -87,12 +89,12 @@ class UserProfileUpdate(serializers.ModelSerializer):
 
         instance.save()
         
-        account = instance.account
-        account.phone = account_data.get('phone', account.phone)
-        account.user_type = account_data.get('user_type', account.user_type)
-        # account.image = account_data.get('image', account.image)
-        account.image_url = account_data.get('image_url', account.image_url)
-        account.save()
+        # account = instance.account
+        # account.phone = account_data.get('phone', account.phone)
+        # account.user_type = account_data.get('user_type', account.user_type)
+        # # account.image = account_data.get('image', account.image)
+        # account.image_url = account_data.get('image_url', account.image_url)
+        # account.save()
 
         return instance
 
@@ -158,4 +160,9 @@ class UserLoginSerializer(serializers.Serializer):
 
 #         return instance
     
-    
+
+
+class ContactMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactMessage
+        fields = '__all__'

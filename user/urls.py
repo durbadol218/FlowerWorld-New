@@ -33,6 +33,7 @@ urlpatterns = [
     path('activate/<uid64>/<token>/', views.activateAccount, name='activate'),
     path('login/', views.UserLoginApiView.as_view(), name='login'),
     path('logout/', views.UserLogoutApiView.as_view(), name='logout'),
+    path('contact/', views.ContactMessageView.as_view(), name='contact'),
     path('profile/update/',views.UserProfileUpdateView.as_view(), name='profile-update'),
     path('change-password/',views.ChangePasswordView.as_view(), name='change-password'),
     path('user-count/', views.TotalUsersCountView.as_view(), name='user_count'),

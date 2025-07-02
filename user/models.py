@@ -12,3 +12,13 @@ class Account(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.user_type}"
+
+
+class ContactMessage(models.Model):
+    full_name = models.CharField(max_length=100)
+    email = models.EmailField()
+    message = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Message from {self.full_name} at {self.sent_at.strftime('%Y-%m-%d %H:%M:%S')}"
